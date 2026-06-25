@@ -5,29 +5,97 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>輕食日記 · MVP</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<title>輕食日記 · MVP v0.2</title>
+<!-- Pinned CDNs via jsdelivr (更穩定) -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
 <style>
-  html, body { background:#f3f4f6; -webkit-tap-highlight-color: transparent; }
+  html, body { background:#f3f4f6; -webkit-tap-highlight-color: transparent; margin:0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif; }
   * { -webkit-touch-callout: none; }
   input, button, select, textarea { font-family: inherit; }
-  /* iOS-style scrollbar hidden */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
   @keyframes pop { 0%{transform:scale(.9);opacity:0} 100%{transform:scale(1);opacity:1} }
   .pop { animation: pop .2s ease-out; }
   @keyframes slideUp { 0%{transform:translateY(20px);opacity:0} 100%{transform:translateY(0);opacity:1} }
   .slide-up { animation: slideUp .3s ease-out; }
+  /* 載入畫面 */
+  #boot { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; z-index:9999; transition:opacity .3s; }
+  #boot.hide { opacity:0; pointer-events:none; }
+  #boot .spinner { width:36px; height:36px; border:3px solid #d1d5db; border-top-color:#10b981; border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #boot .text { margin-top:16px; color:#6b7280; font-size:14px; }
+  #boot .err { max-width:340px; margin-top:16px; padding:16px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; color:#991b1b; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-all; }
+  #boot .recover { margin-top:14px; display:flex; gap:8px; }
+  #boot .recover button { padding:8px 14px; border-radius:8px; border:0; background:#10b981; color:#fff; font-size:13px; cursor:pointer; }
+  #boot .recover button.ghost { background:#fff; color:#374151; border:1px solid #d1d5db; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="env,react">
+<!-- 啟動畫面 + 錯誤顯示 -->
+<div id="boot">
+  <div class="spinner"></div>
+  <div class="text">載入中⋯</div>
+  <div class="err" id="bootErr" style="display:none;"></div>
+  <div class="recover" id="bootRecover" style="display:none;">
+    <button onclick="location.reload()">重新整理</button>
+    <button class="ghost" onclick="if(confirm('會清空 App 暫存的選單狀態，但你的資料(體重/飲食/設定)會保留。確定？')){sessionStorage.clear(); location.reload();}">清快取重來</button>
+  </div>
+</div>
+
+<script>
+  // 全域錯誤捕捉 — 再爛掉也讓使用者看到原因，不再空白
+  function showBootError(msg, details){
+    const boot = document.getElementById('boot');
+    const err = document.getElementById('bootErr');
+    const rec = document.getElementById('bootRecover');
+    if(!boot || !err) return;
+    boot.querySelector('.spinner').style.display = 'none';
+    boot.querySelector('.text').textContent = msg || '載入失敗';
+    err.style.display = 'block';
+    err.textContent = (details || '').toString().slice(0, 800);
+    rec.style.display = 'flex';
+    boot.classList.remove('hide');
+  }
+  window.addEventListener('error', function(e){
+    showBootError('發生錯誤，App 無法啟動', (e.message || '') + '\n' + (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    showBootError('非同步錯誤', e.reason && (e.reason.stack || e.reason.message || e.reason) || 'unknown');
+  });
+  // 8 秒後若 root 還是空的,判定 CDN 沒載到
+  setTimeout(function(){
+    const root = document.getElementById('root');
+    if(root && root.children.length === 0){
+      const missing = [];
+      if(typeof React === 'undefined') missing.push('React');
+      if(typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+      if(typeof Babel === 'undefined') missing.push('Babel');
+      showBootError(
+        '載入超時（8 秒）',
+        '可能是網路不穩或 CDN 暫時抓不到。\n' +
+        (missing.length ? '未載入：' + missing.join(', ') : '所有 CDN 已載入,但 App 沒啟動') +
+        '\n\n建議：(1) 確認連網 (2) 重新整理 (3) 試試其他網路'
+      );
+    } else {
+      const boot = document.getElementById('boot');
+      if(boot) boot.classList.add('hide');
+      setTimeout(()=> boot && boot.remove(), 400);
+    }
+  }, 8000);
+  // 比較快的成功路徑:render 完就把 boot 收起來
+  window.__appReady = function(){
+    const boot = document.getElementById('boot');
+    if(boot){ boot.classList.add('hide'); setTimeout(()=> boot.remove(), 400); }
+  };
+</script>
+
+<script type="text/babel" data-presets="react">
 const { useState, useEffect, useMemo, useRef } = React;
 
 /* ============================================================
@@ -1140,7 +1208,14 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+try {
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  // 啟動成功,收起 loading
+  if(window.__appReady) setTimeout(window.__appReady, 100);
+} catch(err) {
+  if(window.showBootError) window.showBootError('React 初始化失敗', err.stack || err.message || err);
+  console.error(err);
+}
 </script>
 </body>
 </html>
