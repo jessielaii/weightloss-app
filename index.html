@@ -181,13 +181,233 @@ const FOOD_DB = [
   { id:'soda_cracker', name:'蘇打餅乾（4 片）', cat:'零食', unit:'份', kcal:100, p:2, c:16, f:3 },
   { id:'cookie_choc', name:'巧克力餅乾', cat:'零食', unit:'片', kcal:70, p:1, c:9, f:3.5 },
 
-  // 水果 / 配菜（簡單幾樣）
+  // ===== 主食擴充 =====
+  { id:'noodle_plain', name:'陽春麵', cat:'主食', unit:'碗', kcal:380, p:12, c:65, f:6 },
+  { id:'wontonnoodle', name:'餛飩麵', cat:'主食', unit:'碗', kcal:480, p:22, c:65, f:14 },
+  { id:'beefnoodle_thin', name:'紅燒牛肉麵', cat:'主食', unit:'碗', kcal:700, p:32, c:80, f:25 },
+  { id:'noodlerice', name:'米粉湯', cat:'主食', unit:'碗', kcal:350, p:10, c:55, f:8 },
+  { id:'meatthickensoup', name:'肉羹麵', cat:'主食', unit:'碗', kcal:480, p:20, c:60, f:14 },
+  { id:'dandan', name:'擔擔麵', cat:'主食', unit:'碗', kcal:550, p:18, c:65, f:22 },
+  { id:'sesamenoodle', name:'麻醬麵', cat:'主食', unit:'碗', kcal:550, p:16, c:65, f:22 },
+  { id:'frynoodle', name:'炒麵', cat:'主食', unit:'盤', kcal:600, p:20, c:75, f:22 },
+  { id:'frybeehoon', name:'炒米粉', cat:'主食', unit:'盤', kcal:550, p:14, c:75, f:20 },
+  { id:'guoshao', name:'鍋燒意麵', cat:'主食', unit:'碗', kcal:600, p:18, c:70, f:25 },
+  { id:'oyster_noodle', name:'蚵仔麵線', cat:'主食', unit:'碗', kcal:380, p:15, c:55, f:10 },
+  { id:'guangchao', name:'廣州炒飯', cat:'主食', unit:'盤', kcal:700, p:22, c:85, f:25 },
+  { id:'yangchao', name:'揚州炒飯', cat:'主食', unit:'盤', kcal:720, p:22, c:85, f:28 },
+  { id:'beeffryrice', name:'牛肉炒飯', cat:'主食', unit:'盤', kcal:680, p:25, c:80, f:25 },
+  { id:'oyakodon', name:'親子丼', cat:'主食', unit:'碗', kcal:600, p:30, c:80, f:14 },
+  { id:'gyudon', name:'牛丼', cat:'主食', unit:'碗', kcal:650, p:28, c:85, f:18 },
+  { id:'tonkatsu_don', name:'豬排丼', cat:'主食', unit:'碗', kcal:780, p:30, c:85, f:30 },
+  { id:'unagi', name:'鰻魚飯', cat:'主食', unit:'碗', kcal:700, p:30, c:80, f:25 },
+  { id:'eggdon', name:'蛋包飯', cat:'主食', unit:'盤', kcal:700, p:20, c:85, f:28 },
+  { id:'sushi_set', name:'握壽司（8 貫）', cat:'主食', unit:'份', kcal:400, p:20, c:65, f:6 },
+  { id:'sashimi_set', name:'生魚片（6 片）', cat:'主食', unit:'份', kcal:120, p:22, c:0, f:3 },
+  { id:'porktrotter', name:'豬腳飯', cat:'主食', unit:'碗', kcal:850, p:35, c:85, f:38 },
+  { id:'masalad', name:'麻辣燙', cat:'主食', unit:'份', kcal:500, p:22, c:35, f:25 },
+  { id:'hotpot_single', name:'火鍋（一人份食材）', cat:'主食', unit:'份', kcal:500, p:30, c:25, f:25 },
+  { id:'sesameoilchicken', name:'麻油雞', cat:'主食', unit:'碗', kcal:500, p:30, c:8, f:32 },
+  { id:'porridge_meat', name:'廣東粥', cat:'主食', unit:'碗', kcal:280, p:14, c:35, f:8 },
+  { id:'congee_clear', name:'白粥', cat:'主食', unit:'碗', kcal:140, p:3, c:30, f:0.5 },
+
+  // ===== 早餐擴充 =====
+  { id:'eggcake_ham', name:'火腿蛋餅', cat:'早餐', unit:'份', kcal:320, p:14, c:30, f:15 },
+  { id:'eggcake_corn', name:'玉米蛋餅', cat:'早餐', unit:'份', kcal:290, p:11, c:32, f:13 },
+  { id:'congyoubing', name:'蔥抓餅', cat:'早餐', unit:'片', kcal:320, p:8, c:35, f:16 },
+  { id:'congyoubing_egg', name:'蔥抓餅加蛋', cat:'早餐', unit:'片', kcal:420, p:14, c:36, f:22 },
+  { id:'shaobingyoutiao', name:'燒餅油條', cat:'早餐', unit:'份', kcal:600, p:14, c:55, f:35 },
+  { id:'shaobing', name:'燒餅', cat:'早餐', unit:'片', kcal:280, p:8, c:35, f:12 },
+  { id:'youtiao', name:'油條', cat:'早餐', unit:'根', kcal:230, p:4, c:25, f:13 },
+  { id:'sand_ham', name:'三明治（火腿蛋）', cat:'早餐', unit:'份', kcal:320, p:14, c:30, f:16 },
+  { id:'sand_tuna', name:'三明治（鮪魚）', cat:'早餐', unit:'份', kcal:350, p:15, c:32, f:18 },
+  { id:'sand_pork', name:'三明治（肉鬆）', cat:'早餐', unit:'份', kcal:300, p:10, c:35, f:13 },
+  { id:'beefburger', name:'美式牛肉漢堡', cat:'早餐', unit:'個', kcal:520, p:25, c:40, f:28 },
+  { id:'ricepaste', name:'米漿（250ml）', cat:'早餐', unit:'杯', kcal:170, p:3, c:32, f:3 },
+  { id:'fryguotie', name:'鍋貼（10 顆）', cat:'早餐', unit:'份', kcal:600, p:22, c:60, f:28 },
+  { id:'frydumpling', name:'煎餃（10 顆）', cat:'早餐', unit:'份', kcal:600, p:22, c:60, f:28 },
+  { id:'xiaolongbao', name:'小籠包（8 顆）', cat:'早餐', unit:'份', kcal:350, p:18, c:40, f:12 },
+  { id:'bao_meat', name:'肉包', cat:'早餐', unit:'個', kcal:230, p:9, c:30, f:7 },
+  { id:'bao_veg', name:'菜包', cat:'早餐', unit:'個', kcal:180, p:5, c:30, f:4 },
+  { id:'mantou', name:'饅頭', cat:'早餐', unit:'個', kcal:230, p:7, c:45, f:2 },
+  { id:'mantou_egg', name:'蛋黃饅頭', cat:'早餐', unit:'個', kcal:280, p:9, c:48, f:5 },
+  { id:'appbread', name:'蘋果麵包', cat:'早餐', unit:'個', kcal:250, p:5, c:42, f:7 },
+
+  // ===== 飲品擴充 =====
+  { id:'pearl_milktea_half_milkpowder', name:'珍珠奶茶 · 半糖（奶精）', cat:'飲品', unit:'杯', kcal:620, p:5, c:88, f:25 },
+  { id:'puddingmilktea_half', name:'布丁奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:480, p:5, c:75, f:18 },
+  { id:'cocoamilk_half', name:'椰果奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:380, p:3, c:60, f:14 },
+  { id:'caogao_milk_half', name:'仙草奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:380, p:4, c:60, f:14 },
+  { id:'cheesecaptain_half', name:'奶蓋紅茶 · 半糖', cat:'飲品', unit:'杯', kcal:350, p:4, c:38, f:18 },
+  { id:'lemonhoneytea', name:'蜂蜜檸檬', cat:'飲品', unit:'杯', kcal:280, p:0, c:70, f:0 },
+  { id:'passion_green_half', name:'百香果綠 · 半糖', cat:'飲品', unit:'杯', kcal:280, p:0, c:70, f:0 },
+  { id:'yakult_green_half', name:'多多綠 · 半糖', cat:'飲品', unit:'杯', kcal:300, p:2, c:70, f:0 },
+  { id:'grapefruit_green_half', name:'葡萄柚綠 · 半糖', cat:'飲品', unit:'杯', kcal:250, p:0, c:62, f:0 },
+  { id:'cappuccino', name:'卡布奇諾（大）', cat:'飲品', unit:'杯', kcal:180, p:10, c:14, f:9 },
+  { id:'mocha', name:'摩卡（大）', cat:'飲品', unit:'杯', kcal:280, p:11, c:35, f:11 },
+  { id:'caramelmacchiato', name:'焦糖瑪奇朵（大）', cat:'飲品', unit:'杯', kcal:280, p:10, c:32, f:12 },
+  { id:'icelatte', name:'冰拿鐵（大）', cat:'飲品', unit:'杯', kcal:200, p:11, c:16, f:10 },
+  { id:'beer_can', name:'啤酒（罐 330ml）', cat:'飲品', unit:'罐', kcal:130, p:1, c:11, f:0 },
+  { id:'beer_glass', name:'啤酒（生啤一杯 500ml）', cat:'飲品', unit:'杯', kcal:200, p:2, c:17, f:0 },
+  { id:'redwine', name:'紅酒（一杯 150ml）', cat:'飲品', unit:'杯', kcal:125, p:0, c:4, f:0 },
+  { id:'whitewine', name:'白酒（一杯 150ml）', cat:'飲品', unit:'杯', kcal:120, p:0, c:4, f:0 },
+  { id:'sake', name:'清酒（一杯 90ml）', cat:'飲品', unit:'杯', kcal:110, p:0, c:5, f:0 },
+  { id:'whiskey', name:'威士忌（一杯 30ml）', cat:'飲品', unit:'杯', kcal:70, p:0, c:0, f:0 },
+  { id:'highliang', name:'高粱（一杯 30ml）', cat:'飲品', unit:'杯', kcal:100, p:0, c:0, f:0 },
+  { id:'cocktail', name:'調酒（一杯）', cat:'飲品', unit:'杯', kcal:250, p:0, c:25, f:0 },
+  { id:'coconutwater', name:'椰子水（300ml）', cat:'飲品', unit:'杯', kcal:60, p:1, c:14, f:0 },
+  { id:'orangejuice', name:'柳橙汁（300ml）', cat:'飲品', unit:'杯', kcal:130, p:1, c:30, f:0 },
+  { id:'vegjuice', name:'蔬果汁（300ml）', cat:'飲品', unit:'杯', kcal:150, p:1, c:35, f:0 },
+
+  // ===== 夜市擴充 =====
+  { id:'rouyuan', name:'肉圓', cat:'夜市', unit:'個', kcal:350, p:10, c:42, f:15 },
+  { id:'mibian_blood', name:'米血（一份）', cat:'夜市', unit:'份', kcal:200, p:6, c:35, f:4 },
+  { id:'fishball_soup', name:'魚丸湯', cat:'夜市', unit:'碗', kcal:150, p:12, c:8, f:7 },
+  { id:'duck_blood_soup', name:'鴨血湯（麻辣）', cat:'夜市', unit:'碗', kcal:200, p:14, c:8, f:11 },
+  { id:'oyster_thin', name:'蚵仔麵線（小）', cat:'夜市', unit:'碗', kcal:300, p:12, c:45, f:8 },
+  { id:'corn_grill', name:'烤玉米', cat:'夜市', unit:'根', kcal:200, p:5, c:38, f:4 },
+  { id:'sweetpotato_ball', name:'地瓜球（一份）', cat:'夜市', unit:'份', kcal:280, p:3, c:38, f:13 },
+  { id:'heilun', name:'黑輪（一支）', cat:'夜市', unit:'支', kcal:70, p:6, c:5, f:3 },
+  { id:'fishroe_sausage', name:'烤香腸（一根）', cat:'夜市', unit:'根', kcal:230, p:9, c:5, f:18 },
+  { id:'grilledchicken_skewer', name:'雞肉串燒', cat:'夜市', unit:'串', kcal:100, p:14, c:1, f:4 },
+  { id:'taiyaki', name:'鯛魚燒（紅豆）', cat:'夜市', unit:'個', kcal:220, p:5, c:45, f:3 },
+  { id:'redbeancake', name:'紅豆餅', cat:'夜市', unit:'個', kcal:200, p:4, c:38, f:4 },
+  { id:'guancaiban', name:'棺材板', cat:'夜市', unit:'份', kcal:500, p:14, c:55, f:25 },
+  { id:'eggcrepe_classic', name:'雞蛋糕（5 顆）', cat:'夜市', unit:'份', kcal:280, p:6, c:42, f:9 },
+
+  // ===== 零食 / 甜點擴充 =====
+  { id:'cookie_kraker', name:'奇福餅乾（4 片）', cat:'零食', unit:'份', kcal:110, p:2, c:18, f:3 },
+  { id:'ritz', name:'麗滋餅乾（4 片）', cat:'零食', unit:'份', kcal:110, p:2, c:14, f:5 },
+  { id:'eggroll', name:'蛋捲', cat:'零食', unit:'根', kcal:86, p:1, c:10, f:5 },
+  { id:'mnms', name:'M&M\'s 小包', cat:'零食', unit:'包', kcal:240, p:2, c:34, f:10 },
+  { id:'snickers', name:'士力架（一條）', cat:'零食', unit:'條', kcal:250, p:4, c:33, f:12 },
+  { id:'milkchoco', name:'牛奶巧克力（40g）', cat:'零食', unit:'塊', kcal:220, p:3, c:24, f:13 },
+  { id:'oreo', name:'OREO 餅乾（3 片）', cat:'零食', unit:'份', kcal:160, p:2, c:24, f:7 },
+  { id:'kit_kat', name:'KitKat（一條 4 指）', cat:'零食', unit:'條', kcal:210, p:3, c:25, f:11 },
+  { id:'pocky', name:'Pocky 一盒', cat:'零食', unit:'盒', kcal:280, p:4, c:42, f:11 },
+  { id:'ice_cone', name:'霜淇淋', cat:'甜點', unit:'支', kcal:200, p:4, c:30, f:7 },
+  { id:'icecream_ball', name:'冰淇淋（一球）', cat:'甜點', unit:'球', kcal:130, p:2, c:15, f:7 },
+  { id:'popsicle', name:'雪糕（一支）', cat:'甜點', unit:'支', kcal:150, p:2, c:20, f:7 },
+  { id:'shavedice_basic', name:'剉冰（基本配料）', cat:'甜點', unit:'份', kcal:300, p:5, c:65, f:3 },
+  { id:'mangoice', name:'芒果雪花冰', cat:'甜點', unit:'份', kcal:450, p:6, c:80, f:12 },
+  { id:'redbeanice', name:'紅豆牛奶冰', cat:'甜點', unit:'份', kcal:430, p:10, c:75, f:9 },
+  { id:'cake_cheese', name:'起司蛋糕（一片）', cat:'甜點', unit:'片', kcal:320, p:6, c:28, f:20 },
+  { id:'cake_choc', name:'巧克力蛋糕（一片）', cat:'甜點', unit:'片', kcal:350, p:5, c:38, f:20 },
+  { id:'tiramisu', name:'提拉米蘇', cat:'甜點', unit:'份', kcal:380, p:6, c:38, f:22 },
+  { id:'pudding', name:'雞蛋布丁', cat:'甜點', unit:'個', kcal:130, p:4, c:18, f:4 },
+  { id:'macaron', name:'馬卡龍', cat:'甜點', unit:'個', kcal:90, p:1, c:13, f:4 },
+  { id:'donut_plain', name:'甜甜圈（原味）', cat:'甜點', unit:'個', kcal:280, p:4, c:32, f:15 },
+  { id:'donut_choc', name:'甜甜圈（巧克力）', cat:'甜點', unit:'個', kcal:330, p:4, c:38, f:18 },
+  { id:'croissant', name:'可頌', cat:'零食', unit:'個', kcal:270, p:5, c:28, f:15 },
+  { id:'croissant_choc', name:'巧克力可頌', cat:'零食', unit:'個', kcal:330, p:6, c:32, f:20 },
+  { id:'bagel', name:'貝果（原味）', cat:'零食', unit:'個', kcal:280, p:11, c:55, f:1.5 },
+  { id:'muffin', name:'馬芬（藍莓）', cat:'零食', unit:'個', kcal:380, p:5, c:50, f:18 },
+  { id:'pinapplecake', name:'鳳梨酥', cat:'零食', unit:'個', kcal:110, p:1, c:18, f:4 },
+  { id:'mooncake', name:'月餅（蛋黃酥）', cat:'零食', unit:'個', kcal:350, p:6, c:42, f:18 },
+  { id:'breaderbo', name:'菠蘿麵包', cat:'零食', unit:'個', kcal:350, p:7, c:50, f:13 },
+  { id:'breadred', name:'紅豆麵包', cat:'零食', unit:'個', kcal:280, p:7, c:48, f:6 },
+  { id:'breadmilk', name:'奶酥麵包', cat:'零食', unit:'個', kcal:320, p:6, c:42, f:14 },
+
+  // ===== 水果擴充 =====
+  { id:'fruit_grape', name:'葡萄（10 顆）', cat:'水果', unit:'份', kcal:60, p:0, c:16, f:0 },
+  { id:'fruit_grapefruit', name:'葡萄柚（半顆）', cat:'水果', unit:'份', kcal:50, p:1, c:13, f:0 },
+  { id:'fruit_orange', name:'柳丁（中）', cat:'水果', unit:'顆', kcal:60, p:1, c:15, f:0 },
+  { id:'fruit_tangerine', name:'橘子（中）', cat:'水果', unit:'顆', kcal:50, p:1, c:13, f:0 },
+  { id:'fruit_pear', name:'梨子（中）', cat:'水果', unit:'顆', kcal:100, p:1, c:27, f:0 },
+  { id:'fruit_mango', name:'芒果（中）', cat:'水果', unit:'顆', kcal:150, p:2, c:38, f:1 },
+  { id:'fruit_dragon', name:'火龍果（半顆）', cat:'水果', unit:'份', kcal:100, p:2, c:22, f:0 },
+  { id:'fruit_pine', name:'鳳梨（1/8 顆）', cat:'水果', unit:'份', kcal:80, p:1, c:20, f:0 },
+  { id:'fruit_watermelon', name:'西瓜（一片）', cat:'水果', unit:'片', kcal:60, p:1, c:15, f:0 },
+  { id:'fruit_strawberry', name:'草莓（10 顆）', cat:'水果', unit:'份', kcal:50, p:1, c:12, f:0 },
+  { id:'fruit_blueberry', name:'藍莓（一杯）', cat:'水果', unit:'杯', kcal:80, p:1, c:21, f:0 },
+  { id:'fruit_kiwi', name:'奇異果（一顆）', cat:'水果', unit:'顆', kcal:60, p:1, c:14, f:0 },
+  { id:'fruit_papaya', name:'木瓜（1/2 顆）', cat:'水果', unit:'份', kcal:70, p:1, c:18, f:0 },
+  { id:'fruit_guava', name:'芭樂（中）', cat:'水果', unit:'顆', kcal:80, p:3, c:20, f:1 },
+  { id:'fruit_lychee', name:'荔枝（10 顆）', cat:'水果', unit:'份', kcal:70, p:1, c:17, f:0 },
+  { id:'fruit_longan', name:'龍眼（10 顆）', cat:'水果', unit:'份', kcal:70, p:1, c:18, f:0 },
+  { id:'fruit_wax', name:'蓮霧（中）', cat:'水果', unit:'顆', kcal:25, p:0, c:6, f:0 },
+  { id:'fruit_avocado', name:'酪梨（半顆）', cat:'水果', unit:'份', kcal:160, p:2, c:9, f:15 },
+
+  // ===== 蔬菜（新類別） =====
+  { id:'veg_boiled', name:'燙青菜（一份）', cat:'蔬菜', unit:'份', kcal:50, p:3, c:6, f:2 },
+  { id:'veg_kongxin', name:'炒空心菜', cat:'蔬菜', unit:'份', kcal:80, p:3, c:8, f:5 },
+  { id:'veg_cabbage', name:'炒高麗菜', cat:'蔬菜', unit:'份', kcal:100, p:3, c:10, f:6 },
+  { id:'veg_qjiang', name:'炒青江菜', cat:'蔬菜', unit:'份', kcal:70, p:3, c:6, f:4 },
+  { id:'veg_corn_baby', name:'炒玉米筍', cat:'蔬菜', unit:'份', kcal:90, p:3, c:12, f:4 },
+  { id:'veg_mushroom', name:'炒菇類', cat:'蔬菜', unit:'份', kcal:100, p:4, c:10, f:5 },
+  { id:'veg_cucumber', name:'涼拌小黃瓜', cat:'蔬菜', unit:'份', kcal:50, p:2, c:8, f:2 },
+  { id:'veg_broccoli', name:'燙花椰菜', cat:'蔬菜', unit:'份', kcal:50, p:4, c:8, f:0.5 },
+  { id:'veg_sweetpotato', name:'烤地瓜（中）', cat:'蔬菜', unit:'個', kcal:200, p:3, c:48, f:0.5 },
+  { id:'veg_potato', name:'烤馬鈴薯（中）', cat:'蔬菜', unit:'個', kcal:150, p:3, c:35, f:0.2 },
+  { id:'veg_corn', name:'玉米（一根）', cat:'蔬菜', unit:'根', kcal:150, p:4, c:32, f:2 },
+  { id:'veg_salad_caesar', name:'凱薩沙拉', cat:'蔬菜', unit:'份', kcal:300, p:8, c:14, f:24 },
+  { id:'veg_salad_plain', name:'生菜沙拉（無醬）', cat:'蔬菜', unit:'份', kcal:60, p:3, c:10, f:1 },
+
+  // ===== 肉海鮮（新類別，單品） =====
+  { id:'meat_chickenbreast', name:'雞胸肉（100g）', cat:'肉海鮮', unit:'份', kcal:165, p:31, c:0, f:3.6 },
+  { id:'meat_chickenleg', name:'烤雞腿（一隻）', cat:'肉海鮮', unit:'隻', kcal:250, p:25, c:0, f:16 },
+  { id:'meat_steak', name:'牛排（200g）', cat:'肉海鮮', unit:'份', kcal:400, p:50, c:0, f:22 },
+  { id:'meat_porkchop', name:'烤豬排（一片）', cat:'肉海鮮', unit:'片', kcal:280, p:30, c:0, f:18 },
+  { id:'meat_bacon', name:'培根（2 片）', cat:'肉海鮮', unit:'份', kcal:90, p:6, c:0, f:7 },
+  { id:'meat_sausage', name:'香腸（一條）', cat:'肉海鮮', unit:'條', kcal:200, p:8, c:1, f:18 },
+  { id:'meat_ham', name:'火腿（2 片）', cat:'肉海鮮', unit:'份', kcal:70, p:10, c:1, f:3 },
+  { id:'meat_burgerpatty', name:'漢堡排（一片）', cat:'肉海鮮', unit:'片', kcal:320, p:25, c:2, f:24 },
+  { id:'sea_shrimp', name:'蝦子（5 隻）', cat:'肉海鮮', unit:'份', kcal:120, p:24, c:1, f:2 },
+  { id:'sea_salmon', name:'鮭魚（一片 150g）', cat:'肉海鮮', unit:'片', kcal:300, p:30, c:0, f:20 },
+  { id:'sea_mackerel', name:'鯖魚（一片 150g）', cat:'肉海鮮', unit:'片', kcal:280, p:28, c:0, f:18 },
+  { id:'sea_tuna', name:'鮪魚（50g）', cat:'肉海鮮', unit:'份', kcal:75, p:17, c:0, f:0.5 },
+  { id:'sea_squid', name:'章魚（50g）', cat:'肉海鮮', unit:'份', kcal:40, p:8, c:1, f:0.5 },
+  { id:'sea_clam', name:'蛤蜊湯（一碗）', cat:'肉海鮮', unit:'碗', kcal:100, p:14, c:5, f:2 },
+
+  // ===== 便利商店（新類別） =====
+  { id:'cvs_rice_tuna', name:'御飯糰（鮪魚）', cat:'便利商店', unit:'個', kcal:180, p:6, c:34, f:3 },
+  { id:'cvs_rice_salmon', name:'御飯糰（鮭魚）', cat:'便利商店', unit:'個', kcal:200, p:8, c:34, f:4 },
+  { id:'cvs_rice_meat', name:'御飯糰（肉燥）', cat:'便利商店', unit:'個', kcal:220, p:6, c:36, f:6 },
+  { id:'cvs_salad_chicken', name:'雞胸肉沙拉', cat:'便利商店', unit:'份', kcal:200, p:25, c:12, f:6 },
+  { id:'cvs_bento_normal', name:'超商便當（一般）', cat:'便利商店', unit:'個', kcal:650, p:25, c:80, f:22 },
+  { id:'cvs_oden_radish', name:'關東煮 · 蘿蔔', cat:'便利商店', unit:'份', kcal:30, p:1, c:6, f:0 },
+  { id:'cvs_oden_egg', name:'關東煮 · 茶葉蛋', cat:'便利商店', unit:'顆', kcal:78, p:6, c:1, f:5.5 },
+  { id:'cvs_oden_tofu', name:'關東煮 · 油豆腐', cat:'便利商店', unit:'份', kcal:130, p:8, c:3, f:9 },
+  { id:'cvs_dahot', name:'大亨堡', cat:'便利商店', unit:'個', kcal:280, p:10, c:25, f:15 },
+  { id:'cvs_porridge_salty', name:'鹹粥（鮮食）', cat:'便利商店', unit:'盒', kcal:280, p:12, c:42, f:6 },
+  { id:'cvs_chickenbreast', name:'即食雞胸肉', cat:'便利商店', unit:'包', kcal:110, p:22, c:1, f:1.5 },
+  { id:'cvs_protein_milk', name:'高蛋白牛奶（一瓶）', cat:'便利商店', unit:'瓶', kcal:160, p:15, c:18, f:3 },
+
+  // ===== 速食（新類別） =====
+  { id:'fast_bigmac', name:'麥當勞 · 大麥克', cat:'速食', unit:'個', kcal:540, p:25, c:46, f:28 },
+  { id:'fast_doublecheese', name:'麥當勞 · 雙層牛肉吉事堡', cat:'速食', unit:'個', kcal:460, p:27, c:35, f:23 },
+  { id:'fast_filetofish', name:'麥當勞 · 麥香魚', cat:'速食', unit:'個', kcal:360, p:16, c:38, f:16 },
+  { id:'fast_mcchicken', name:'麥當勞 · 麥香雞', cat:'速食', unit:'個', kcal:400, p:14, c:40, f:21 },
+  { id:'fast_mcnug6', name:'麥當勞 · 麥克雞塊 6 塊', cat:'速食', unit:'份', kcal:280, p:14, c:16, f:18 },
+  { id:'fast_mcnug9', name:'麥當勞 · 麥克雞塊 9 塊', cat:'速食', unit:'份', kcal:410, p:21, c:24, f:27 },
+  { id:'fast_fries_s', name:'麥當勞 · 薯條（小）', cat:'速食', unit:'份', kcal:220, p:3, c:28, f:11 },
+  { id:'fast_fries_m', name:'麥當勞 · 薯條（中）', cat:'速食', unit:'份', kcal:320, p:4, c:42, f:15 },
+  { id:'fast_fries_l', name:'麥當勞 · 薯條（大）', cat:'速食', unit:'份', kcal:440, p:6, c:58, f:21 },
+  { id:'fast_applepie', name:'麥當勞 · 蘋果派', cat:'速食', unit:'個', kcal:230, p:2, c:33, f:11 },
+  { id:'fast_mos_rice', name:'摩斯 · 米漢堡（牛）', cat:'速食', unit:'個', kcal:350, p:18, c:48, f:11 },
+  { id:'fast_mos_burger', name:'摩斯 · 摩斯漢堡', cat:'速食', unit:'個', kcal:350, p:14, c:35, f:18 },
+  { id:'fast_kfc_chickenburger', name:'肯德基 · 紐奧良烤雞腿堡', cat:'速食', unit:'個', kcal:580, p:30, c:48, f:30 },
+  { id:'fast_kfc_chickennug', name:'肯德基 · 上校雞塊 6 塊', cat:'速食', unit:'份', kcal:250, p:15, c:14, f:15 },
+  { id:'fast_kfc_eggtart', name:'肯德基 · 蛋撻', cat:'速食', unit:'個', kcal:200, p:3, c:22, f:11 },
+  { id:'fast_subway_turkey', name:'Subway · 火雞 6 吋', cat:'速食', unit:'份', kcal:290, p:18, c:46, f:4 },
+  { id:'fast_pizza_slice', name:'必勝客 · 一片 pizza', cat:'速食', unit:'片', kcal:280, p:12, c:30, f:12 },
+
+  // ===== 乳製品（新類別） =====
+  { id:'dairy_cheeseslice', name:'起司片（一片）', cat:'乳製品', unit:'片', kcal:65, p:4, c:1, f:5 },
+  { id:'dairy_mozzarella', name:'莫札瑞拉起司（100g）', cat:'乳製品', unit:'份', kcal:280, p:22, c:2, f:21 },
+  { id:'dairy_yogurt_no', name:'無糖優格（200g）', cat:'乳製品', unit:'盒', kcal:100, p:10, c:8, f:3 },
+  { id:'dairy_yogurt_yes', name:'有糖優格（200g）', cat:'乳製品', unit:'盒', kcal:200, p:8, c:30, f:5 },
+  { id:'dairy_greek', name:'希臘優格（200g）', cat:'乳製品', unit:'盒', kcal:130, p:18, c:8, f:4 },
+  { id:'dairy_butter', name:'奶油（10g）', cat:'乳製品', unit:'份', kcal:70, p:0, c:0, f:8 },
+  { id:'dairy_cream', name:'鮮奶油（一湯匙）', cat:'乳製品', unit:'湯匙', kcal:50, p:0, c:0, f:5 },
+  { id:'dairy_lowfat_milk', name:'低脂鮮奶（500ml）', cat:'乳製品', unit:'瓶', kcal:230, p:16, c:24, f:8 },
+
+  // ===== 水果 / 配菜（保留原本） =====
   { id:'banana', name:'香蕉（中）', cat:'水果', unit:'根', kcal:90, p:1, c:23, f:0 },
   { id:'apple', name:'蘋果（中）', cat:'水果', unit:'顆', kcal:80, p:0, c:21, f:0 },
   { id:'tomato_s', name:'小番茄（10 顆）', cat:'水果', unit:'份', kcal:30, p:1, c:7, f:0 },
 ];
 
-const FOOD_CATEGORIES = ['主食','早餐','飲品','蛋類','夜市','零食','水果'];
+const FOOD_CATEGORIES = ['主食','早餐','飲品','蛋類','蔬菜','肉海鮮','水果','便利商店','速食','夜市','零食','甜點','乳製品'];
 
 /* ============================================================
  *  計算引擎
@@ -1048,12 +1268,40 @@ function WeightLog({ profile, onBack }){
  *  Settings
  * ============================================================ */
 function Settings({ profile, onBack, onUpdate, onReset }){
-  const [edit, setEdit] = useState({...profile});
+  const [edit, setEdit] = useState(()=>({
+    ...profile,
+    useCustomTargets: profile.useCustomTargets || false,
+    customKcal: profile.customKcal ?? profile.dailyKcal,
+    customProtein: profile.customProtein ?? profile.proteinG,
+    customCarbs: profile.customCarbs ?? profile.carbsG,
+    customFat: profile.customFat ?? profile.fatG,
+    customWater: profile.customWater ?? profile.waterMl,
+  }));
   const newTargets = useMemo(()=> calcDailyTargets(edit), [edit]);
 
   const save = () => {
-    onUpdate({...edit, ...newTargets});
+    // 套用自訂或自動計算
+    const finalTargets = edit.useCustomTargets ? {
+      ...newTargets,
+      dailyKcal: +edit.customKcal || newTargets.dailyKcal,
+      proteinG: +edit.customProtein || newTargets.proteinG,
+      carbsG: +edit.customCarbs || newTargets.carbsG,
+      fatG: +edit.customFat || newTargets.fatG,
+      waterMl: +edit.customWater || newTargets.waterMl,
+    } : newTargets;
+    onUpdate({...edit, ...finalTargets});
     onBack();
+  };
+
+  const resetCustomToCalculated = () => {
+    setEdit(e => ({
+      ...e,
+      customKcal: newTargets.dailyKcal,
+      customProtein: newTargets.proteinG,
+      customCarbs: newTargets.carbsG,
+      customFat: newTargets.fatG,
+      customWater: newTargets.waterMl,
+    }));
   };
 
   const exportData = () => {
@@ -1126,7 +1374,7 @@ function Settings({ profile, onBack, onUpdate, onReset }){
         </div>
 
         <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 text-sm">
-          <div className="text-emerald-800 font-medium mb-2">預覽新目標</div>
+          <div className="text-emerald-800 font-medium mb-2">自動計算（依基本資料）</div>
           <div className="space-y-1 text-emerald-700">
             <div>每日熱量：<span className="font-bold">{newTargets.dailyKcal}</span> 大卡</div>
             <div>蛋白 {newTargets.proteinG}g · 碳水 {newTargets.carbsG}g · 脂肪 {newTargets.fatG}g</div>
@@ -1134,6 +1382,64 @@ function Settings({ profile, onBack, onUpdate, onReset }){
             <div>BMI {newTargets.bmi}</div>
             {newTargets.floorApplied && <div className="text-amber-700 text-xs mt-1">⚠️ 已套用熱量下限保護</div>}
           </div>
+        </div>
+
+        {/* 自訂目標 */}
+        <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="font-semibold text-gray-800 text-sm">使用自訂目標</div>
+              <div className="text-[11px] text-gray-500">開啟後優先使用下方數字，忽略自動計算</div>
+            </div>
+            <button onClick={()=>setEdit({...edit, useCustomTargets: !edit.useCustomTargets})}
+              className={`relative w-12 h-7 rounded-full transition ${edit.useCustomTargets?'bg-emerald-500':'bg-gray-300'}`}>
+              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${edit.useCustomTargets?'left-[22px]':'left-0.5'}`}/>
+            </button>
+          </div>
+
+          {edit.useCustomTargets && (
+            <div className="slide-up space-y-3 pt-2 border-t border-gray-100">
+              <div>
+                <label className="text-xs text-gray-500">每日熱量 (kcal)</label>
+                <input type="number" value={edit.customKcal}
+                  onChange={e=>setEdit({...edit, customKcal: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-lg font-semibold"/>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs text-rose-500">蛋白 g</label>
+                  <input type="number" value={edit.customProtein}
+                    onChange={e=>setEdit({...edit, customProtein: e.target.value})}
+                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
+                </div>
+                <div>
+                  <label className="text-xs text-amber-500">碳水 g</label>
+                  <input type="number" value={edit.customCarbs}
+                    onChange={e=>setEdit({...edit, customCarbs: e.target.value})}
+                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
+                </div>
+                <div>
+                  <label className="text-xs text-blue-500">脂肪 g</label>
+                  <input type="number" value={edit.customFat}
+                    onChange={e=>setEdit({...edit, customFat: e.target.value})}
+                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-cyan-600">每日水分 (ml)</label>
+                <input type="number" value={edit.customWater}
+                  onChange={e=>setEdit({...edit, customWater: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
+              </div>
+              <button onClick={resetCustomToCalculated}
+                className="w-full py-2 rounded-lg border border-gray-300 text-xs text-gray-600 active:bg-gray-50">
+                ↻ 拉回到自動計算的數字
+              </button>
+              <div className="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 border border-amber-100">
+                ⚠️ 自訂目標時，健康下限保護不會自動套用。請依專業建議設定。
+              </div>
+            </div>
+          )}
         </div>
 
         <button onClick={save}
@@ -1156,7 +1462,7 @@ function Settings({ profile, onBack, onUpdate, onReset }){
         </div>
 
         <div className="text-center text-[11px] text-gray-400 py-4">
-          輕食日記 MVP v0.1<br/>
+          輕食日記 MVP v0.3<br/>
           資料儲存在你的瀏覽器
         </div>
       </div>
