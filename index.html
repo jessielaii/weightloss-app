@@ -2,54 +2,52 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>輕食日記 · MVP v0.2</title>
-<!-- Pinned CDNs via jsdelivr (更穩定) -->
+<title>輕食日記 · v0.4</title>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
 <style>
-  html, body { background:#f3f4f6; -webkit-tap-highlight-color: transparent; margin:0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif; }
+  html, body { background:#f5f5f7; -webkit-tap-highlight-color: transparent; margin:0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif; color:#1c1c1e; }
   * { -webkit-touch-callout: none; }
   input, button, select, textarea { font-family: inherit; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
-  @keyframes pop { 0%{transform:scale(.9);opacity:0} 100%{transform:scale(1);opacity:1} }
-  .pop { animation: pop .2s ease-out; }
-  @keyframes slideUp { 0%{transform:translateY(20px);opacity:0} 100%{transform:translateY(0);opacity:1} }
-  .slide-up { animation: slideUp .3s ease-out; }
-  /* 載入畫面 */
-  #boot { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; z-index:9999; transition:opacity .3s; }
+  @keyframes slideUp { 0%{transform:translateY(100%)} 100%{transform:translateY(0)} }
+  .sheet-in { animation: slideUp .28s cubic-bezier(.32,.72,0,1); }
+  @keyframes fadeIn { 0%{opacity:0} 100%{opacity:1} }
+  .fade-in { animation: fadeIn .2s ease-out; }
+  @keyframes pop { 0%{transform:scale(.85);opacity:0} 100%{transform:scale(1);opacity:1} }
+  .pop { animation: pop .25s cubic-bezier(.4,2,.6,1); }
+  #boot { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f5f5f7; z-index:9999; transition:opacity .3s; }
   #boot.hide { opacity:0; pointer-events:none; }
-  #boot .spinner { width:36px; height:36px; border:3px solid #d1d5db; border-top-color:#10b981; border-radius:50%; animation:spin 1s linear infinite; }
+  #boot .spinner { width:36px; height:36px; border:3px solid #e5e7eb; border-top-color:#22c55e; border-radius:50%; animation:spin 1s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
   #boot .text { margin-top:16px; color:#6b7280; font-size:14px; }
   #boot .err { max-width:340px; margin-top:16px; padding:16px; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; color:#991b1b; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-all; }
   #boot .recover { margin-top:14px; display:flex; gap:8px; }
-  #boot .recover button { padding:8px 14px; border-radius:8px; border:0; background:#10b981; color:#fff; font-size:13px; cursor:pointer; }
+  #boot .recover button { padding:8px 14px; border-radius:8px; border:0; background:#22c55e; color:#fff; font-size:13px; cursor:pointer; }
   #boot .recover button.ghost { background:#fff; color:#374151; border:1px solid #d1d5db; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
-<!-- 啟動畫面 + 錯誤顯示 -->
 <div id="boot">
   <div class="spinner"></div>
   <div class="text">載入中⋯</div>
   <div class="err" id="bootErr" style="display:none;"></div>
   <div class="recover" id="bootRecover" style="display:none;">
     <button onclick="location.reload()">重新整理</button>
-    <button class="ghost" onclick="if(confirm('會清空 App 暫存的選單狀態，但你的資料(體重/飲食/設定)會保留。確定？')){sessionStorage.clear(); location.reload();}">清快取重來</button>
+    <button class="ghost" onclick="if(confirm('清快取重來？資料保留。')){sessionStorage.clear(); location.reload();}">清快取重來</button>
   </div>
 </div>
 
 <script>
-  // 全域錯誤捕捉 — 再爛掉也讓使用者看到原因，不再空白
   function showBootError(msg, details){
     const boot = document.getElementById('boot');
     const err = document.getElementById('bootErr');
@@ -68,7 +66,6 @@
   window.addEventListener('unhandledrejection', function(e){
     showBootError('非同步錯誤', e.reason && (e.reason.stack || e.reason.message || e.reason) || 'unknown');
   });
-  // 8 秒後若 root 還是空的,判定 CDN 沒載到
   setTimeout(function(){
     const root = document.getElementById('root');
     if(root && root.children.length === 0){
@@ -76,19 +73,13 @@
       if(typeof React === 'undefined') missing.push('React');
       if(typeof ReactDOM === 'undefined') missing.push('ReactDOM');
       if(typeof Babel === 'undefined') missing.push('Babel');
-      showBootError(
-        '載入超時（8 秒）',
-        '可能是網路不穩或 CDN 暫時抓不到。\n' +
-        (missing.length ? '未載入：' + missing.join(', ') : '所有 CDN 已載入,但 App 沒啟動') +
-        '\n\n建議：(1) 確認連網 (2) 重新整理 (3) 試試其他網路'
-      );
+      showBootError('載入超時', '可能網路不穩或 CDN 抓不到。\n' + (missing.length ? '未載入：' + missing.join(', ') : '所有 CDN 已載入,但 App 沒啟動'));
     } else {
       const boot = document.getElementById('boot');
       if(boot) boot.classList.add('hide');
       setTimeout(()=> boot && boot.remove(), 400);
     }
   }, 8000);
-  // 比較快的成功路徑:render 完就把 boot 收起來
   window.__appReady = function(){
     const boot = document.getElementById('boot');
     if(boot){ boot.classList.add('hide'); setTimeout(()=> boot.remove(), 400); }
@@ -99,10 +90,9 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
 /* ============================================================
- *  資料：台灣常見食物資料庫（從第二份 prompt 文件抽出來）
+ *  食物資料庫
  * ============================================================ */
 const FOOD_DB = [
-  // 主食
   { id:'rice', name:'白飯', cat:'主食', unit:'碗', kcal:280, p:6, c:60, f:0.5 },
   { id:'lurou', name:'滷肉飯', cat:'主食', unit:'碗', kcal:620, p:18, c:80, f:22 },
   { id:'chickenrice', name:'雞肉飯', cat:'主食', unit:'碗', kcal:425, p:20, c:65, f:10 },
@@ -112,76 +102,16 @@ const FOOD_DB = [
   { id:'beefnoodle', name:'牛肉麵', cat:'主食', unit:'碗', kcal:650, p:30, c:80, f:22 },
   { id:'friedrice', name:'蛋炒飯', cat:'主食', unit:'盤', kcal:650, p:18, c:85, f:22 },
   { id:'curryrice', name:'咖哩雞飯', cat:'主食', unit:'盤', kcal:690, p:25, c:90, f:20 },
-  // 燒臘
   { id:'sambao', name:'燒臘三寶飯', cat:'主食', unit:'碗', kcal:1100, p:45, c:95, f:50 },
   { id:'charsiu', name:'叉燒飯', cat:'主食', unit:'碗', kcal:750, p:28, c:85, f:32 },
   { id:'oilchicken', name:'油雞飯', cat:'主食', unit:'碗', kcal:550, p:30, c:75, f:18 },
   { id:'roastduck', name:'燒鴨飯', cat:'主食', unit:'碗', kcal:750, p:32, c:80, f:28 },
-  // 義大利麵
   { id:'pasta_plain', name:'義大利麵 · 清炒', cat:'主食', unit:'份', kcal:450, p:14, c:65, f:15 },
   { id:'pasta_red', name:'義大利麵 · 紅醬', cat:'主食', unit:'份', kcal:550, p:16, c:70, f:22 },
   { id:'pasta_green', name:'義大利麵 · 青醬', cat:'主食', unit:'份', kcal:750, p:18, c:65, f:42 },
   { id:'pasta_white', name:'義大利麵 · 白醬', cat:'主食', unit:'份', kcal:850, p:20, c:75, f:48 },
-  // 河粉 / 自助餐
   { id:'pho', name:'越南牛肉河粉', cat:'主食', unit:'碗', kcal:400, p:28, c:55, f:8 },
   { id:'buffet', name:'自助餐（一般組合）', cat:'主食', unit:'份', kcal:700, p:25, c:80, f:25 },
-
-  // 早餐
-  { id:'eggcake', name:'原味蛋餅', cat:'早餐', unit:'份', kcal:260, p:10, c:28, f:12 },
-  { id:'cheeseeggcake', name:'起司蛋餅', cat:'早餐', unit:'份', kcal:350, p:14, c:30, f:18 },
-  { id:'radishcake', name:'蘿蔔糕加蛋', cat:'早餐', unit:'份', kcal:370, p:12, c:38, f:18 },
-  { id:'ironplate', name:'鐵板麵', cat:'早餐', unit:'份', kcal:500, p:15, c:65, f:18 },
-  { id:'hameggburger', name:'火腿蛋堡', cat:'早餐', unit:'個', kcal:330, p:14, c:32, f:15 },
-  { id:'chickenburger', name:'雞腿蛋堡', cat:'早餐', unit:'個', kcal:480, p:22, c:38, f:24 },
-  { id:'fanvtuan', name:'飯糰', cat:'早餐', unit:'個', kcal:450, p:14, c:65, f:14 },
-
-  // 飲品
-  { id:'green_no', name:'純綠茶 · 無糖', cat:'飲品', unit:'杯', kcal:5, p:0, c:1, f:0 },
-  { id:'green_half', name:'純綠茶 · 半糖', cat:'飲品', unit:'杯', kcal:130, p:0, c:32, f:0 },
-  { id:'green_full', name:'純綠茶 · 全糖', cat:'飲品', unit:'杯', kcal:200, p:0, c:50, f:0 },
-  { id:'milktea_no', name:'奶精奶茶 · 無糖', cat:'飲品', unit:'杯', kcal:300, p:3, c:30, f:18 },
-  { id:'milktea_half', name:'奶精奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:450, p:3, c:60, f:18 },
-  { id:'milktea_full', name:'奶精奶茶 · 全糖', cat:'飲品', unit:'杯', kcal:500, p:3, c:70, f:18 },
-  { id:'pearl_milktea_full', name:'珍珠奶茶 · 全糖（奶精）', cat:'飲品', unit:'杯', kcal:740, p:5, c:110, f:28 },
-  { id:'pearl_freshmilk_half', name:'珍珠鮮奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:580, p:12, c:80, f:22 },
-  { id:'freshmilktea_no', name:'紅茶拿鐵 · 無糖', cat:'飲品', unit:'杯', kcal:200, p:8, c:12, f:11 },
-  { id:'brownsugar_milk', name:'黑糖鮮奶（無另加糖）', cat:'飲品', unit:'杯', kcal:380, p:12, c:55, f:12 },
-  { id:'soy_no', name:'無糖豆漿', cat:'飲品', unit:'杯(500ml)', kcal:160, p:14, c:8, f:8 },
-  { id:'soy_yes', name:'有糖豆漿', cat:'飲品', unit:'杯(500ml)', kcal:275, p:14, c:38, f:8 },
-  { id:'soy_salty', name:'鹹豆漿', cat:'飲品', unit:'碗', kcal:180, p:12, c:18, f:8 },
-  { id:'milk_full', name:'全脂鮮奶 500ml', cat:'飲品', unit:'盒', kcal:320, p:16, c:24, f:18 },
-  { id:'americano', name:'美式咖啡', cat:'飲品', unit:'杯', kcal:8, p:0, c:1, f:0 },
-  { id:'latte', name:'拿鐵（全脂）大杯', cat:'飲品', unit:'杯', kcal:230, p:12, c:18, f:12 },
-
-  // 蛋
-  { id:'boilegg', name:'水煮蛋', cat:'蛋類', unit:'顆', kcal:79, p:6, c:0.5, f:5.5 },
-  { id:'teaegg', name:'茶葉蛋', cat:'蛋類', unit:'顆', kcal:78, p:6, c:1, f:5.5 },
-  { id:'ramenegg', name:'溏心蛋', cat:'蛋類', unit:'顆', kcal:95, p:7, c:2, f:6 },
-  { id:'fryegg', name:'荷包蛋', cat:'蛋類', unit:'顆', kcal:110, p:6, c:1, f:9 },
-  { id:'steamegg', name:'蒸蛋（碗）', cat:'蛋類', unit:'碗', kcal:120, p:8, c:3, f:8 },
-
-  // 夜市
-  { id:'chickensteak', name:'夜市雞排', cat:'夜市', unit:'片', kcal:550, p:35, c:30, f:30 },
-  { id:'popcornchicken_s', name:'鹽酥雞 · 小份', cat:'夜市', unit:'份', kcal:350, p:18, c:22, f:20 },
-  { id:'popcornchicken_l', name:'鹽酥雞 · 大份', cat:'夜市', unit:'份', kcal:620, p:32, c:38, f:36 },
-  { id:'bigsausage', name:'大腸包小腸', cat:'夜市', unit:'份', kcal:470, p:14, c:55, f:22 },
-  { id:'greenonionpancake', name:'蔥油餅加蛋', cat:'夜市', unit:'份', kcal:500, p:12, c:42, f:30 },
-  { id:'takoyaki', name:'章魚燒（6 顆）', cat:'夜市', unit:'份', kcal:380, p:14, c:42, f:18 },
-  { id:'stinkytofu', name:'臭豆腐（4 塊）', cat:'夜市', unit:'份', kcal:450, p:22, c:35, f:24 },
-  { id:'oysteromelet', name:'蚵仔煎', cat:'夜市', unit:'份', kcal:450, p:18, c:48, f:20 },
-  { id:'peppercake', name:'胡椒餅', cat:'夜市', unit:'個', kcal:400, p:15, c:42, f:18 },
-
-  // 零食
-  { id:'chocopie', name:'巧克力酥片', cat:'零食', unit:'塊', kcal:168, p:2, c:18, f:9 },
-  { id:'ferrero', name:'金莎巧克力', cat:'零食', unit:'顆', kcal:65, p:1, c:5, f:4.5 },
-  { id:'darkchoco', name:'黑巧克力（10g）', cat:'零食', unit:'片', kcal:60, p:1, c:5, f:4 },
-  { id:'gummy', name:'水果軟糖', cat:'零食', unit:'顆', kcal:20, p:0, c:5, f:0 },
-  { id:'nougat', name:'牛軋糖', cat:'零食', unit:'顆', kcal:48, p:1, c:6, f:2 },
-  { id:'chips', name:'洋芋片 60g 包', cat:'零食', unit:'包', kcal:320, p:4, c:32, f:20 },
-  { id:'soda_cracker', name:'蘇打餅乾（4 片）', cat:'零食', unit:'份', kcal:100, p:2, c:16, f:3 },
-  { id:'cookie_choc', name:'巧克力餅乾', cat:'零食', unit:'片', kcal:70, p:1, c:9, f:3.5 },
-
-  // ===== 主食擴充 =====
   { id:'noodle_plain', name:'陽春麵', cat:'主食', unit:'碗', kcal:380, p:12, c:65, f:6 },
   { id:'wontonnoodle', name:'餛飩麵', cat:'主食', unit:'碗', kcal:480, p:22, c:65, f:14 },
   { id:'beefnoodle_thin', name:'紅燒牛肉麵', cat:'主食', unit:'碗', kcal:700, p:32, c:80, f:25 },
@@ -210,7 +140,13 @@ const FOOD_DB = [
   { id:'porridge_meat', name:'廣東粥', cat:'主食', unit:'碗', kcal:280, p:14, c:35, f:8 },
   { id:'congee_clear', name:'白粥', cat:'主食', unit:'碗', kcal:140, p:3, c:30, f:0.5 },
 
-  // ===== 早餐擴充 =====
+  { id:'eggcake', name:'原味蛋餅', cat:'早餐', unit:'份', kcal:260, p:10, c:28, f:12 },
+  { id:'cheeseeggcake', name:'起司蛋餅', cat:'早餐', unit:'份', kcal:350, p:14, c:30, f:18 },
+  { id:'radishcake', name:'蘿蔔糕加蛋', cat:'早餐', unit:'份', kcal:370, p:12, c:38, f:18 },
+  { id:'ironplate', name:'鐵板麵', cat:'早餐', unit:'份', kcal:500, p:15, c:65, f:18 },
+  { id:'hameggburger', name:'火腿蛋堡', cat:'早餐', unit:'個', kcal:330, p:14, c:32, f:15 },
+  { id:'chickenburger', name:'雞腿蛋堡', cat:'早餐', unit:'個', kcal:480, p:22, c:38, f:24 },
+  { id:'fanvtuan', name:'飯糰', cat:'早餐', unit:'個', kcal:450, p:14, c:65, f:14 },
   { id:'eggcake_ham', name:'火腿蛋餅', cat:'早餐', unit:'份', kcal:320, p:14, c:30, f:15 },
   { id:'eggcake_corn', name:'玉米蛋餅', cat:'早餐', unit:'份', kcal:290, p:11, c:32, f:13 },
   { id:'congyoubing', name:'蔥抓餅', cat:'早餐', unit:'片', kcal:320, p:8, c:35, f:16 },
@@ -231,8 +167,24 @@ const FOOD_DB = [
   { id:'mantou', name:'饅頭', cat:'早餐', unit:'個', kcal:230, p:7, c:45, f:2 },
   { id:'mantou_egg', name:'蛋黃饅頭', cat:'早餐', unit:'個', kcal:280, p:9, c:48, f:5 },
   { id:'appbread', name:'蘋果麵包', cat:'早餐', unit:'個', kcal:250, p:5, c:42, f:7 },
+  { id:'oatmeal', name:'燕麥粥', cat:'早餐', unit:'碗', kcal:300, p:10, c:54, f:6 },
 
-  // ===== 飲品擴充 =====
+  { id:'green_no', name:'純綠茶 · 無糖', cat:'飲品', unit:'杯', kcal:5, p:0, c:1, f:0 },
+  { id:'green_half', name:'純綠茶 · 半糖', cat:'飲品', unit:'杯', kcal:130, p:0, c:32, f:0 },
+  { id:'green_full', name:'純綠茶 · 全糖', cat:'飲品', unit:'杯', kcal:200, p:0, c:50, f:0 },
+  { id:'milktea_no', name:'奶精奶茶 · 無糖', cat:'飲品', unit:'杯', kcal:300, p:3, c:30, f:18 },
+  { id:'milktea_half', name:'奶精奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:450, p:3, c:60, f:18 },
+  { id:'milktea_full', name:'奶精奶茶 · 全糖', cat:'飲品', unit:'杯', kcal:500, p:3, c:70, f:18 },
+  { id:'pearl_milktea_full', name:'珍珠奶茶 · 全糖（奶精）', cat:'飲品', unit:'杯', kcal:740, p:5, c:110, f:28 },
+  { id:'pearl_freshmilk_half', name:'珍珠鮮奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:580, p:12, c:80, f:22 },
+  { id:'freshmilktea_no', name:'紅茶拿鐵 · 無糖', cat:'飲品', unit:'杯', kcal:200, p:8, c:12, f:11 },
+  { id:'brownsugar_milk', name:'黑糖鮮奶（無另加糖）', cat:'飲品', unit:'杯', kcal:380, p:12, c:55, f:12 },
+  { id:'soy_no', name:'無糖豆漿', cat:'飲品', unit:'杯(500ml)', kcal:160, p:14, c:8, f:8 },
+  { id:'soy_yes', name:'有糖豆漿', cat:'飲品', unit:'杯(500ml)', kcal:275, p:14, c:38, f:8 },
+  { id:'soy_salty', name:'鹹豆漿', cat:'飲品', unit:'碗', kcal:180, p:12, c:18, f:8 },
+  { id:'milk_full', name:'全脂鮮奶 500ml', cat:'飲品', unit:'盒', kcal:320, p:16, c:24, f:18 },
+  { id:'americano', name:'美式咖啡', cat:'飲品', unit:'杯', kcal:8, p:0, c:1, f:0 },
+  { id:'latte', name:'拿鐵（全脂）大杯', cat:'飲品', unit:'杯', kcal:230, p:12, c:18, f:12 },
   { id:'pearl_milktea_half_milkpowder', name:'珍珠奶茶 · 半糖（奶精）', cat:'飲品', unit:'杯', kcal:620, p:5, c:88, f:25 },
   { id:'puddingmilktea_half', name:'布丁奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:480, p:5, c:75, f:18 },
   { id:'cocoamilk_half', name:'椰果奶茶 · 半糖', cat:'飲品', unit:'杯', kcal:380, p:3, c:60, f:14 },
@@ -258,7 +210,21 @@ const FOOD_DB = [
   { id:'orangejuice', name:'柳橙汁（300ml）', cat:'飲品', unit:'杯', kcal:130, p:1, c:30, f:0 },
   { id:'vegjuice', name:'蔬果汁（300ml）', cat:'飲品', unit:'杯', kcal:150, p:1, c:35, f:0 },
 
-  // ===== 夜市擴充 =====
+  { id:'boilegg', name:'水煮蛋', cat:'蛋類', unit:'顆', kcal:79, p:6, c:0.5, f:5.5 },
+  { id:'teaegg', name:'茶葉蛋', cat:'蛋類', unit:'顆', kcal:78, p:6, c:1, f:5.5 },
+  { id:'ramenegg', name:'溏心蛋', cat:'蛋類', unit:'顆', kcal:95, p:7, c:2, f:6 },
+  { id:'fryegg', name:'荷包蛋', cat:'蛋類', unit:'顆', kcal:110, p:6, c:1, f:9 },
+  { id:'steamegg', name:'蒸蛋（碗）', cat:'蛋類', unit:'碗', kcal:120, p:8, c:3, f:8 },
+
+  { id:'chickensteak', name:'夜市雞排', cat:'夜市', unit:'片', kcal:550, p:35, c:30, f:30 },
+  { id:'popcornchicken_s', name:'鹽酥雞 · 小份', cat:'夜市', unit:'份', kcal:350, p:18, c:22, f:20 },
+  { id:'popcornchicken_l', name:'鹽酥雞 · 大份', cat:'夜市', unit:'份', kcal:620, p:32, c:38, f:36 },
+  { id:'bigsausage', name:'大腸包小腸', cat:'夜市', unit:'份', kcal:470, p:14, c:55, f:22 },
+  { id:'greenonionpancake', name:'蔥油餅加蛋', cat:'夜市', unit:'份', kcal:500, p:12, c:42, f:30 },
+  { id:'takoyaki', name:'章魚燒（6 顆）', cat:'夜市', unit:'份', kcal:380, p:14, c:42, f:18 },
+  { id:'stinkytofu', name:'臭豆腐（4 塊）', cat:'夜市', unit:'份', kcal:450, p:22, c:35, f:24 },
+  { id:'oysteromelet', name:'蚵仔煎', cat:'夜市', unit:'份', kcal:450, p:18, c:48, f:20 },
+  { id:'peppercake', name:'胡椒餅', cat:'夜市', unit:'個', kcal:400, p:15, c:42, f:18 },
   { id:'rouyuan', name:'肉圓', cat:'夜市', unit:'個', kcal:350, p:10, c:42, f:15 },
   { id:'mibian_blood', name:'米血（一份）', cat:'夜市', unit:'份', kcal:200, p:6, c:35, f:4 },
   { id:'fishball_soup', name:'魚丸湯', cat:'夜市', unit:'碗', kcal:150, p:12, c:8, f:7 },
@@ -274,16 +240,33 @@ const FOOD_DB = [
   { id:'guancaiban', name:'棺材板', cat:'夜市', unit:'份', kcal:500, p:14, c:55, f:25 },
   { id:'eggcrepe_classic', name:'雞蛋糕（5 顆）', cat:'夜市', unit:'份', kcal:280, p:6, c:42, f:9 },
 
-  // ===== 零食 / 甜點擴充 =====
+  { id:'chocopie', name:'巧克力酥片', cat:'零食', unit:'塊', kcal:168, p:2, c:18, f:9 },
+  { id:'ferrero', name:'金莎巧克力', cat:'零食', unit:'顆', kcal:65, p:1, c:5, f:4.5 },
+  { id:'darkchoco', name:'黑巧克力（10g）', cat:'零食', unit:'片', kcal:60, p:1, c:5, f:4 },
+  { id:'gummy', name:'水果軟糖', cat:'零食', unit:'顆', kcal:20, p:0, c:5, f:0 },
+  { id:'nougat', name:'牛軋糖', cat:'零食', unit:'顆', kcal:48, p:1, c:6, f:2 },
+  { id:'chips', name:'洋芋片 60g 包', cat:'零食', unit:'包', kcal:320, p:4, c:32, f:20 },
+  { id:'soda_cracker', name:'蘇打餅乾（4 片）', cat:'零食', unit:'份', kcal:100, p:2, c:16, f:3 },
+  { id:'cookie_choc', name:'巧克力餅乾', cat:'零食', unit:'片', kcal:70, p:1, c:9, f:3.5 },
   { id:'cookie_kraker', name:'奇福餅乾（4 片）', cat:'零食', unit:'份', kcal:110, p:2, c:18, f:3 },
   { id:'ritz', name:'麗滋餅乾（4 片）', cat:'零食', unit:'份', kcal:110, p:2, c:14, f:5 },
   { id:'eggroll', name:'蛋捲', cat:'零食', unit:'根', kcal:86, p:1, c:10, f:5 },
-  { id:'mnms', name:'M&M\'s 小包', cat:'零食', unit:'包', kcal:240, p:2, c:34, f:10 },
+  { id:'mnms', name:"M&M's 小包", cat:'零食', unit:'包', kcal:240, p:2, c:34, f:10 },
   { id:'snickers', name:'士力架（一條）', cat:'零食', unit:'條', kcal:250, p:4, c:33, f:12 },
   { id:'milkchoco', name:'牛奶巧克力（40g）', cat:'零食', unit:'塊', kcal:220, p:3, c:24, f:13 },
   { id:'oreo', name:'OREO 餅乾（3 片）', cat:'零食', unit:'份', kcal:160, p:2, c:24, f:7 },
   { id:'kit_kat', name:'KitKat（一條 4 指）', cat:'零食', unit:'條', kcal:210, p:3, c:25, f:11 },
   { id:'pocky', name:'Pocky 一盒', cat:'零食', unit:'盒', kcal:280, p:4, c:42, f:11 },
+  { id:'croissant', name:'可頌', cat:'零食', unit:'個', kcal:270, p:5, c:28, f:15 },
+  { id:'croissant_choc', name:'巧克力可頌', cat:'零食', unit:'個', kcal:330, p:6, c:32, f:20 },
+  { id:'bagel', name:'貝果（原味）', cat:'零食', unit:'個', kcal:280, p:11, c:55, f:1.5 },
+  { id:'muffin', name:'馬芬（藍莓）', cat:'零食', unit:'個', kcal:380, p:5, c:50, f:18 },
+  { id:'pinapplecake', name:'鳳梨酥', cat:'零食', unit:'個', kcal:110, p:1, c:18, f:4 },
+  { id:'mooncake', name:'月餅（蛋黃酥）', cat:'零食', unit:'個', kcal:350, p:6, c:42, f:18 },
+  { id:'breaderbo', name:'菠蘿麵包', cat:'零食', unit:'個', kcal:350, p:7, c:50, f:13 },
+  { id:'breadred', name:'紅豆麵包', cat:'零食', unit:'個', kcal:280, p:7, c:48, f:6 },
+  { id:'breadmilk', name:'奶酥麵包', cat:'零食', unit:'個', kcal:320, p:6, c:42, f:14 },
+
   { id:'ice_cone', name:'霜淇淋', cat:'甜點', unit:'支', kcal:200, p:4, c:30, f:7 },
   { id:'icecream_ball', name:'冰淇淋（一球）', cat:'甜點', unit:'球', kcal:130, p:2, c:15, f:7 },
   { id:'popsicle', name:'雪糕（一支）', cat:'甜點', unit:'支', kcal:150, p:2, c:20, f:7 },
@@ -297,23 +280,16 @@ const FOOD_DB = [
   { id:'macaron', name:'馬卡龍', cat:'甜點', unit:'個', kcal:90, p:1, c:13, f:4 },
   { id:'donut_plain', name:'甜甜圈（原味）', cat:'甜點', unit:'個', kcal:280, p:4, c:32, f:15 },
   { id:'donut_choc', name:'甜甜圈（巧克力）', cat:'甜點', unit:'個', kcal:330, p:4, c:38, f:18 },
-  { id:'croissant', name:'可頌', cat:'零食', unit:'個', kcal:270, p:5, c:28, f:15 },
-  { id:'croissant_choc', name:'巧克力可頌', cat:'零食', unit:'個', kcal:330, p:6, c:32, f:20 },
-  { id:'bagel', name:'貝果（原味）', cat:'零食', unit:'個', kcal:280, p:11, c:55, f:1.5 },
-  { id:'muffin', name:'馬芬（藍莓）', cat:'零食', unit:'個', kcal:380, p:5, c:50, f:18 },
-  { id:'pinapplecake', name:'鳳梨酥', cat:'零食', unit:'個', kcal:110, p:1, c:18, f:4 },
-  { id:'mooncake', name:'月餅（蛋黃酥）', cat:'零食', unit:'個', kcal:350, p:6, c:42, f:18 },
-  { id:'breaderbo', name:'菠蘿麵包', cat:'零食', unit:'個', kcal:350, p:7, c:50, f:13 },
-  { id:'breadred', name:'紅豆麵包', cat:'零食', unit:'個', kcal:280, p:7, c:48, f:6 },
-  { id:'breadmilk', name:'奶酥麵包', cat:'零食', unit:'個', kcal:320, p:6, c:42, f:14 },
 
-  // ===== 水果擴充 =====
+  { id:'banana', name:'香蕉（中）', cat:'水果', unit:'根', kcal:90, p:1, c:23, f:0 },
+  { id:'apple', name:'蘋果（中）', cat:'水果', unit:'顆', kcal:80, p:0, c:21, f:0 },
+  { id:'tomato_s', name:'小番茄（10 顆）', cat:'水果', unit:'份', kcal:30, p:1, c:7, f:0 },
   { id:'fruit_grape', name:'葡萄（10 顆）', cat:'水果', unit:'份', kcal:60, p:0, c:16, f:0 },
   { id:'fruit_grapefruit', name:'葡萄柚（半顆）', cat:'水果', unit:'份', kcal:50, p:1, c:13, f:0 },
   { id:'fruit_orange', name:'柳丁（中）', cat:'水果', unit:'顆', kcal:60, p:1, c:15, f:0 },
   { id:'fruit_tangerine', name:'橘子（中）', cat:'水果', unit:'顆', kcal:50, p:1, c:13, f:0 },
   { id:'fruit_pear', name:'梨子（中）', cat:'水果', unit:'顆', kcal:100, p:1, c:27, f:0 },
-  { id:'fruit_mango', name:'芒果（中）', cat:'水果', unit:'顆', kcal:150, p:2, c:38, f:1 },
+  { id:'fruit_mango', name:'芒果(中)', cat:'水果', unit:'顆', kcal:150, p:2, c:38, f:1 },
   { id:'fruit_dragon', name:'火龍果（半顆）', cat:'水果', unit:'份', kcal:100, p:2, c:22, f:0 },
   { id:'fruit_pine', name:'鳳梨（1/8 顆）', cat:'水果', unit:'份', kcal:80, p:1, c:20, f:0 },
   { id:'fruit_watermelon', name:'西瓜（一片）', cat:'水果', unit:'片', kcal:60, p:1, c:15, f:0 },
@@ -327,7 +303,6 @@ const FOOD_DB = [
   { id:'fruit_wax', name:'蓮霧（中）', cat:'水果', unit:'顆', kcal:25, p:0, c:6, f:0 },
   { id:'fruit_avocado', name:'酪梨（半顆）', cat:'水果', unit:'份', kcal:160, p:2, c:9, f:15 },
 
-  // ===== 蔬菜（新類別） =====
   { id:'veg_boiled', name:'燙青菜（一份）', cat:'蔬菜', unit:'份', kcal:50, p:3, c:6, f:2 },
   { id:'veg_kongxin', name:'炒空心菜', cat:'蔬菜', unit:'份', kcal:80, p:3, c:8, f:5 },
   { id:'veg_cabbage', name:'炒高麗菜', cat:'蔬菜', unit:'份', kcal:100, p:3, c:10, f:6 },
@@ -342,7 +317,6 @@ const FOOD_DB = [
   { id:'veg_salad_caesar', name:'凱薩沙拉', cat:'蔬菜', unit:'份', kcal:300, p:8, c:14, f:24 },
   { id:'veg_salad_plain', name:'生菜沙拉（無醬）', cat:'蔬菜', unit:'份', kcal:60, p:3, c:10, f:1 },
 
-  // ===== 肉海鮮（新類別，單品） =====
   { id:'meat_chickenbreast', name:'雞胸肉（100g）', cat:'肉海鮮', unit:'份', kcal:165, p:31, c:0, f:3.6 },
   { id:'meat_chickenleg', name:'烤雞腿（一隻）', cat:'肉海鮮', unit:'隻', kcal:250, p:25, c:0, f:16 },
   { id:'meat_steak', name:'牛排（200g）', cat:'肉海鮮', unit:'份', kcal:400, p:50, c:0, f:22 },
@@ -358,7 +332,6 @@ const FOOD_DB = [
   { id:'sea_squid', name:'章魚（50g）', cat:'肉海鮮', unit:'份', kcal:40, p:8, c:1, f:0.5 },
   { id:'sea_clam', name:'蛤蜊湯（一碗）', cat:'肉海鮮', unit:'碗', kcal:100, p:14, c:5, f:2 },
 
-  // ===== 便利商店（新類別） =====
   { id:'cvs_rice_tuna', name:'御飯糰（鮪魚）', cat:'便利商店', unit:'個', kcal:180, p:6, c:34, f:3 },
   { id:'cvs_rice_salmon', name:'御飯糰（鮭魚）', cat:'便利商店', unit:'個', kcal:200, p:8, c:34, f:4 },
   { id:'cvs_rice_meat', name:'御飯糰（肉燥）', cat:'便利商店', unit:'個', kcal:220, p:6, c:36, f:6 },
@@ -372,7 +345,6 @@ const FOOD_DB = [
   { id:'cvs_chickenbreast', name:'即食雞胸肉', cat:'便利商店', unit:'包', kcal:110, p:22, c:1, f:1.5 },
   { id:'cvs_protein_milk', name:'高蛋白牛奶（一瓶）', cat:'便利商店', unit:'瓶', kcal:160, p:15, c:18, f:3 },
 
-  // ===== 速食（新類別） =====
   { id:'fast_bigmac', name:'麥當勞 · 大麥克', cat:'速食', unit:'個', kcal:540, p:25, c:46, f:28 },
   { id:'fast_doublecheese', name:'麥當勞 · 雙層牛肉吉事堡', cat:'速食', unit:'個', kcal:460, p:27, c:35, f:23 },
   { id:'fast_filetofish', name:'麥當勞 · 麥香魚', cat:'速食', unit:'個', kcal:360, p:16, c:38, f:16 },
@@ -391,7 +363,6 @@ const FOOD_DB = [
   { id:'fast_subway_turkey', name:'Subway · 火雞 6 吋', cat:'速食', unit:'份', kcal:290, p:18, c:46, f:4 },
   { id:'fast_pizza_slice', name:'必勝客 · 一片 pizza', cat:'速食', unit:'片', kcal:280, p:12, c:30, f:12 },
 
-  // ===== 乳製品（新類別） =====
   { id:'dairy_cheeseslice', name:'起司片（一片）', cat:'乳製品', unit:'片', kcal:65, p:4, c:1, f:5 },
   { id:'dairy_mozzarella', name:'莫札瑞拉起司（100g）', cat:'乳製品', unit:'份', kcal:280, p:22, c:2, f:21 },
   { id:'dairy_yogurt_no', name:'無糖優格（200g）', cat:'乳製品', unit:'盒', kcal:100, p:10, c:8, f:3 },
@@ -400,17 +371,12 @@ const FOOD_DB = [
   { id:'dairy_butter', name:'奶油（10g）', cat:'乳製品', unit:'份', kcal:70, p:0, c:0, f:8 },
   { id:'dairy_cream', name:'鮮奶油（一湯匙）', cat:'乳製品', unit:'湯匙', kcal:50, p:0, c:0, f:5 },
   { id:'dairy_lowfat_milk', name:'低脂鮮奶（500ml）', cat:'乳製品', unit:'瓶', kcal:230, p:16, c:24, f:8 },
-
-  // ===== 水果 / 配菜（保留原本） =====
-  { id:'banana', name:'香蕉（中）', cat:'水果', unit:'根', kcal:90, p:1, c:23, f:0 },
-  { id:'apple', name:'蘋果（中）', cat:'水果', unit:'顆', kcal:80, p:0, c:21, f:0 },
-  { id:'tomato_s', name:'小番茄（10 顆）', cat:'水果', unit:'份', kcal:30, p:1, c:7, f:0 },
 ];
 
 const FOOD_CATEGORIES = ['主食','早餐','飲品','蛋類','蔬菜','肉海鮮','水果','便利商店','速食','夜市','零食','甜點','乳製品'];
 
 /* ============================================================
- *  計算引擎
+ *  計算 / Storage
  * ============================================================ */
 function calcAge(birthDate){
   if(!birthDate) return 30;
@@ -427,142 +393,105 @@ function calcDailyTargets(profile){
   const age = calcAge(birthday);
   const w = parseFloat(current_weight_kg);
   const h = parseFloat(height_cm);
-
-  // Mifflin-St Jeor
   let bmr = (10 * w) + (6.25 * h) - (5 * age);
   bmr += (gender === 'male' ? 5 : -161);
-
   const activityFactors = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725 };
   const tdee = bmr * (activityFactors[activity_level] || 1.375);
-
   const deficits = { mild:250, standard:500, aggressive:750 };
   let dailyKcal = Math.round(tdee - (deficits[weight_loss_pace] || 500));
-
-  // 健康下限
   const floor = gender === 'male' ? 1500 : 1200;
   let floorApplied = false;
   if(dailyKcal < floor){ dailyKcal = floor; floorApplied = true; }
-
-  // 三大營養素 (30% protein / 40% carbs / 30% fat)
   const proteinG = Math.round((dailyKcal * 0.30) / 4);
   const carbsG   = Math.round((dailyKcal * 0.40) / 4);
   const fatG     = Math.round((dailyKcal * 0.30) / 9);
-
-  // 水分: 體重 × 32 ml
   const waterMl = Math.round(w * 32);
-
-  // 預估達標
   const diff = w - parseFloat(target_weight_kg);
   const weeklyLossKg = (deficits[weight_loss_pace] || 500) * 7 / 7700;
   const weeksToGoal = diff > 0 ? Math.ceil(diff / weeklyLossKg) : 0;
-  const estimatedDate = new Date();
-  estimatedDate.setDate(estimatedDate.getDate() + weeksToGoal * 7);
-
   return {
-    age,
-    bmr: Math.round(bmr),
-    tdee: Math.round(tdee),
-    dailyKcal,
-    proteinG, carbsG, fatG,
-    waterMl,
-    weeksToGoal,
-    estimatedDate: estimatedDate.toISOString().slice(0,10),
+    age, bmr: Math.round(bmr), tdee: Math.round(tdee),
+    dailyKcal, proteinG, carbsG, fatG, waterMl, weeksToGoal,
     floorApplied,
     bmi: +(w / ((h/100)*(h/100))).toFixed(1),
   };
 }
 
-/* ============================================================
- *  Storage
- * ============================================================ */
-const LS_KEYS = {
-  profile: 'wlapp_profile',
-  entries: 'wlapp_entries',
-  water:   'wlapp_water',
-  weight:  'wlapp_weight',
-  favs:    'wlapp_favs',
-};
-
-function loadJSON(key, fallback){
-  try{
-    const v = localStorage.getItem(key);
-    return v ? JSON.parse(v) : fallback;
-  }catch(e){ return fallback; }
-}
-function saveJSON(key, value){
-  try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
-}
+const LS_KEYS = { profile:'wlapp_profile', entries:'wlapp_entries', water:'wlapp_water', weight:'wlapp_weight' };
+function loadJSON(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+function saveJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+function firstChar(name){ return (name || '').trim().charAt(0).toUpperCase() || '?'; }
 
 /* ============================================================
- *  UI 元件
+ *  共用元件
  * ============================================================ */
-function KcalRing({ consumed, target, size=180 }){
-  const pct = Math.min(consumed / target, 1.2); // 可以超過 100%
+function KcalRing({ consumed, target, size=200 }){
   const remaining = target - consumed;
-  const r = 70;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - Math.min(pct, 1));
   const overBudget = consumed > target;
+  const pct = Math.min(consumed / target, 1);
+  const r = 78;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - pct);
   return (
     <div className="relative flex items-center justify-center" style={{width:size, height:size}}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} stroke="#e5e7eb" strokeWidth="14" fill="none"/>
+        <circle cx={size/2} cy={size/2} r={r} stroke="#f1f1f4" strokeWidth="14" fill="none"/>
         <circle cx={size/2} cy={size/2} r={r}
-          stroke={overBudget ? '#ef4444' : '#16a34a'}
+          stroke={overBudget ? '#ef4444' : '#22c55e'}
           strokeWidth="14" fill="none"
           strokeDasharray={c}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{transition:'stroke-dashoffset .5s ease'}}
+          style={{transition:'stroke-dashoffset .6s cubic-bezier(.4,1,.4,1)'}}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-xs text-gray-500">{overBudget ? '已超出' : '剩餘'}</div>
-        <div className={`text-3xl font-bold ${overBudget?'text-red-500':'text-gray-800'}`}>
+        <div className={`text-5xl font-bold ${overBudget?'text-red-500':'text-gray-900'}`} style={{lineHeight:1}}>
           {Math.abs(Math.round(remaining))}
         </div>
-        <div className="text-xs text-gray-500">大卡</div>
-        <div className="text-[10px] text-gray-400 mt-1">{Math.round(consumed)} / {target}</div>
+        <div className="text-xs text-gray-400 mt-1">kcal {overBudget?'超出':'剩餘'}</div>
       </div>
     </div>
   );
 }
 
-function StatBar({ label, value, target, color='bg-emerald-500', unit='g' }){
+function MacroBar({ label, value, target, color }){
   const pct = Math.min((value/target)*100, 100);
   return (
     <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-600">{label}</span>
-        <span className="text-gray-700 font-medium">{Math.round(value)}/{target}{unit}</span>
+      <div className="flex justify-between items-baseline mb-1.5">
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-xs text-gray-400">
+          <span className="text-gray-700 font-medium">{Math.round(value)}</span> / {target} g
+        </span>
       </div>
-      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div className={color + ' h-full rounded-full transition-all'} style={{width: pct+'%'}}/>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{width: pct+'%', backgroundColor: color}}/>
       </div>
     </div>
   );
 }
 
-function ScreenShell({ children, title, onBack, rightAction }){
-  return (
-    <div className="min-h-screen bg-gray-100 max-w-md mx-auto relative">
-      {title !== undefined && (
-        <div className="sticky top-0 bg-white border-b border-gray-200 z-10 flex items-center justify-between px-3 py-3">
-          {onBack ? (
-            <button onClick={onBack} className="text-gray-700 px-2 py-1 -ml-2 active:opacity-50">‹ 返回</button>
-          ) : <div className="w-12"/>}
-          <div className="font-semibold text-gray-800">{title}</div>
-          <div className="w-12 text-right">{rightAction}</div>
-        </div>
-      )}
-      {children}
-    </div>
-  );
-}
+/* SVG icons (用於底部 nav 等) */
+const Icons = {
+  home: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>,
+  record: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>,
+  weight: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>,
+  me: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>,
+  plus: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  minus: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  plusSmall: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  chevR: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg>,
+  search: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg>,
+  back: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  drop: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c-3 4-7 8.5-7 12.5a7 7 0 0 0 14 0c0-4-4-8.5-7-12.5z"/></svg>,
+  trash: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+  undo: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>,
+};
 
 /* ============================================================
- *  Onboarding 流程
+ *  Onboarding
  * ============================================================ */
 function Onboarding({ onDone }){
   const [step, setStep] = useState(0);
@@ -576,109 +505,105 @@ function Onboarding({ onDone }){
     activity_level: 'light',
     weight_loss_pace: 'standard',
   });
-
   const update = (k,v) => setData(d => ({...d, [k]:v}));
-
-  const targets = useMemo(()=> {
-    try { return calcDailyTargets(data); } catch(e){ return null; }
-  }, [data]);
+  const targets = useMemo(()=> { try { return calcDailyTargets(data); } catch(e){ return null; } }, [data]);
 
   const steps = [
     { title: '歡迎', body: (
-      <div className="text-center pt-8">
-        <div className="text-6xl mb-4">🥗</div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">輕食日記</h1>
-        <p className="text-gray-500 mb-8">記錄你吃的每一口，看著體重往目標走。</p>
+      <div className="text-center pt-12 fade-in">
+        <div className="text-6xl mb-5">🥗</div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">輕食日記</h1>
+        <p className="text-gray-500 mb-10 text-sm leading-relaxed">記錄你吃的每一口<br/>看著體重慢慢往目標走</p>
         <input
-          className="w-full max-w-xs mx-auto px-4 py-3 rounded-lg border border-gray-300 text-center"
-          placeholder="你的名字（可選）"
+          className="w-full max-w-xs mx-auto px-5 py-3.5 rounded-2xl border border-gray-200 text-center bg-gray-50 focus:bg-white focus:border-green-400 outline-none"
+          placeholder="你的名字"
           value={data.display_name}
           onChange={e=>update('display_name', e.target.value)}
         />
       </div>
     )},
     { title:'基本資料', body:(
-      <div className="space-y-5">
+      <div className="space-y-5 fade-in">
         <div>
-          <label className="text-sm text-gray-600 block mb-2">性別</label>
-          <div className="grid grid-cols-2 gap-2">
+          <label className="text-sm text-gray-500 block mb-2.5">性別</label>
+          <div className="grid grid-cols-2 gap-2.5">
             {[{v:'female',l:'女'},{v:'male',l:'男'}].map(g => (
               <button key={g.v} onClick={()=>update('gender',g.v)}
-                className={`py-3 rounded-lg border-2 font-medium transition ${data.gender===g.v?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200 text-gray-600'}`}>
+                className={'py-4 rounded-2xl font-medium transition active:scale-95 ' + (data.gender===g.v?'bg-green-500 text-white':'bg-gray-100 text-gray-600')}>
                 {g.l}
               </button>
             ))}
           </div>
         </div>
         <div>
-          <label className="text-sm text-gray-600 block mb-2">生日</label>
+          <label className="text-sm text-gray-500 block mb-2.5">生日</label>
           <input type="date" value={data.birthday}
             onChange={e=>update('birthday', e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300"/>
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 outline-none"/>
         </div>
         <div>
-          <label className="text-sm text-gray-600 block mb-2">身高 (cm)</label>
+          <label className="text-sm text-gray-500 block mb-2.5">身高 (cm)</label>
           <input type="number" value={data.height_cm} min={100} max={250}
             onChange={e=>update('height_cm', +e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300"/>
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 outline-none text-lg font-medium"/>
         </div>
       </div>
     )},
     { title:'你的目標', body:(
-      <div className="space-y-5">
+      <div className="space-y-5 fade-in">
         <div>
-          <label className="text-sm text-gray-600 block mb-2">目前體重 (kg)</label>
+          <label className="text-sm text-gray-500 block mb-2.5">目前體重 (kg)</label>
           <input type="number" step="0.1" value={data.current_weight_kg}
             onChange={e=>update('current_weight_kg', +e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-lg font-medium"/>
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 outline-none text-2xl font-bold text-center"/>
         </div>
         <div>
-          <label className="text-sm text-gray-600 block mb-2">目標體重 (kg)</label>
+          <label className="text-sm text-gray-500 block mb-2.5">目標體重 (kg)</label>
           <input type="number" step="0.1" value={data.target_weight_kg}
             onChange={e=>update('target_weight_kg', +e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-lg font-medium"/>
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 outline-none text-2xl font-bold text-center"/>
         </div>
         {targets && (
-          <div className="bg-emerald-50 rounded-lg p-3 text-sm text-emerald-800">
-            <div>目前 BMI：<span className="font-bold">{targets.bmi}</span></div>
+          <div className="bg-green-50 rounded-2xl p-4 text-sm text-green-800">
+            目前 BMI <span className="font-bold">{targets.bmi}</span>
             {data.target_weight_kg && data.height_cm && (
-              <div>目標 BMI：{ (+data.target_weight_kg / ((data.height_cm/100)**2)).toFixed(1) }</div>
+              <> · 目標 BMI {(+data.target_weight_kg / ((data.height_cm/100)**2)).toFixed(1)}</>
             )}
           </div>
         )}
       </div>
     )},
     { title:'活動量 & 步調', body:(
-      <div className="space-y-5">
+      <div className="space-y-5 fade-in">
         <div>
-          <label className="text-sm text-gray-600 block mb-2">日常活動量</label>
+          <label className="text-sm text-gray-500 block mb-2.5">日常活動量</label>
           <div className="space-y-2">
             {[
               {v:'sedentary',l:'久坐',d:'整天坐辦公室，沒運動'},
-              {v:'light',l:'輕度',d:'偶爾走路 / 每週 1–3 次運動'},
+              {v:'light',l:'輕度',d:'偶爾走路，每週 1–3 次運動'},
               {v:'moderate',l:'中度',d:'每週 3–5 次運動'},
               {v:'active',l:'高度',d:'每天運動或勞力工作'},
             ].map(a => (
               <button key={a.v} onClick={()=>update('activity_level',a.v)}
-                className={`w-full text-left p-3 rounded-lg border-2 transition ${data.activity_level===a.v?'border-emerald-500 bg-emerald-50':'border-gray-200 bg-white'}`}>
-                <div className="font-medium text-gray-800">{a.l}</div>
-                <div className="text-xs text-gray-500">{a.d}</div>
+                className={'w-full text-left p-4 rounded-2xl transition active:scale-95 ' + (data.activity_level===a.v?'bg-green-500 text-white':'bg-gray-100 text-gray-800')}>
+                <div className="font-medium">{a.l}</div>
+                <div className={'text-xs mt-0.5 ' + (data.activity_level===a.v?'text-green-50':'text-gray-500')}>{a.d}</div>
               </button>
             ))}
           </div>
         </div>
         <div>
-          <label className="text-sm text-gray-600 block mb-2">減重步調</label>
+          <label className="text-sm text-gray-500 block mb-2.5">減重步調</label>
           <div className="grid grid-cols-3 gap-2">
             {[
-              {v:'mild',l:'溫和',d:'-0.25kg/週'},
-              {v:'standard',l:'標準',d:'-0.5kg/週'},
-              {v:'aggressive',l:'積極',d:'-0.75kg/週'},
+              {v:'mild',l:'溫和',d:'-0.25 kg/週'},
+              {v:'standard',l:'標準',d:'-0.5 kg/週'},
+              {v:'aggressive',l:'積極',d:'-0.75 kg/週'},
             ].map(p => (
               <button key={p.v} onClick={()=>update('weight_loss_pace',p.v)}
-                className={`p-2 rounded-lg border-2 transition ${data.weight_loss_pace===p.v?'border-emerald-500 bg-emerald-50':'border-gray-200 bg-white'}`}>
+                className={'p-3 rounded-2xl transition active:scale-95 ' + (data.weight_loss_pace===p.v?'bg-green-500 text-white':'bg-gray-100 text-gray-700')}>
                 <div className="text-sm font-medium">{p.l}</div>
-                <div className="text-[10px] text-gray-500">{p.d}</div>
+                <div className={'text-[10px] mt-0.5 ' + (data.weight_loss_pace===p.v?'text-green-50':'text-gray-500')}>{p.d}</div>
               </button>
             ))}
           </div>
@@ -686,33 +611,36 @@ function Onboarding({ onDone }){
       </div>
     )},
     { title:'你的每日目標', body: targets && (
-      <div className="space-y-4">
+      <div className="space-y-4 fade-in">
         {targets.floorApplied && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            ⚠️ 你選的步調會讓每日熱量低於健康下限，已自動調整到 {data.gender==='male'?1500:1200} 大卡。
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+            ⚠️ 步調會讓熱量低於健康下限，已自動調整為 {data.gender==='male'?1500:1200} 大卡
           </div>
         )}
-        <div className="bg-white rounded-xl p-4 border border-gray-200">
-          <div className="text-xs text-gray-500 mb-1">每日熱量目標</div>
-          <div className="text-3xl font-bold text-emerald-600">{targets.dailyKcal} <span className="text-base text-gray-500">大卡</span></div>
-          <div className="text-xs text-gray-400 mt-1">BMR {targets.bmr} · TDEE {targets.tdee}</div>
+        <div className="bg-white rounded-3xl p-6 border border-gray-100">
+          <div className="text-xs text-gray-400 mb-1">每日熱量目標</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold text-green-500">{targets.dailyKcal.toLocaleString()}</span>
+            <span className="text-gray-400">kcal</span>
+          </div>
+          <div className="text-xs text-gray-400 mt-2">基礎代謝 {targets.bmr} · 總消耗 {targets.tdee}</div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-2">
-          <div className="text-xs text-gray-500 mb-1">三大營養素</div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div><div className="text-lg font-bold text-rose-500">{targets.proteinG}g</div><div className="text-[10px] text-gray-500">蛋白質</div></div>
-            <div><div className="text-lg font-bold text-amber-500">{targets.carbsG}g</div><div className="text-[10px] text-gray-500">碳水</div></div>
-            <div><div className="text-lg font-bold text-blue-500">{targets.fatG}g</div><div className="text-[10px] text-gray-500">脂肪</div></div>
+        <div className="bg-white rounded-3xl p-6 border border-gray-100">
+          <div className="text-xs text-gray-400 mb-3">三大營養素</div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div><div className="text-2xl font-bold text-red-400">{targets.proteinG}<span className="text-xs text-gray-400 ml-0.5">g</span></div><div className="text-[11px] text-gray-500 mt-0.5">蛋白質</div></div>
+            <div><div className="text-2xl font-bold text-amber-500">{targets.carbsG}<span className="text-xs text-gray-400 ml-0.5">g</span></div><div className="text-[11px] text-gray-500 mt-0.5">碳水</div></div>
+            <div><div className="text-2xl font-bold text-blue-400">{targets.fatG}<span className="text-xs text-gray-400 ml-0.5">g</span></div><div className="text-[11px] text-gray-500 mt-0.5">脂肪</div></div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-3xl p-6 border border-gray-100 grid grid-cols-2 gap-3 text-center">
           <div>
-            <div className="text-xs text-gray-500">每日水分</div>
-            <div className="text-xl font-bold text-cyan-600">{targets.waterMl} ml</div>
+            <div className="text-xs text-gray-400">每日水分</div>
+            <div className="text-2xl font-bold text-cyan-500 mt-1">{targets.waterMl}<span className="text-xs text-gray-400 ml-0.5">ml</span></div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">預估達標</div>
-            <div className="text-xl font-bold text-gray-700">{targets.weeksToGoal} 週</div>
+            <div className="text-xs text-gray-400">預估達標</div>
+            <div className="text-2xl font-bold text-gray-700 mt-1">{targets.weeksToGoal}<span className="text-xs text-gray-400 ml-0.5">週</span></div>
           </div>
         </div>
       </div>
@@ -720,25 +648,26 @@ function Onboarding({ onDone }){
   ];
 
   const cur = steps[step];
-
   return (
-    <div className="min-h-screen bg-white max-w-md mx-auto p-5 pb-24 relative">
-      <div className="flex gap-1 mb-6">
+    <div className="min-h-screen bg-white max-w-md mx-auto p-6 pb-28 relative"
+         style={{maxWidth:'448px', margin:'0 auto', position:'relative', minHeight:'100vh', background:'#ffffff', padding:'24px', paddingBottom:'112px'}}>
+      <div className="flex gap-1 mb-8">
         {steps.map((_,i) => (
-          <div key={i} className={`flex-1 h-1 rounded-full ${i<=step?'bg-emerald-500':'bg-gray-200'}`}/>
+          <div key={i} className={'flex-1 h-1 rounded-full transition-colors ' + (i<=step?'bg-green-500':'bg-gray-200')}/>
         ))}
       </div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">{cur.title}</h2>
-      <div className="slide-up">{cur.body}</div>
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 max-w-md mx-auto">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{cur.title}</h2>
+      {cur.body}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 max-w-md mx-auto"
+           style={{position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'448px', background:'#ffffff', borderTop:'1px solid #f3f4f6', padding:'16px'}}>
         <div className="flex gap-2">
           {step > 0 && (
-            <button onClick={()=>setStep(s=>s-1)} className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium active:opacity-50">上一步</button>
+            <button onClick={()=>setStep(s=>s-1)} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-700 font-medium active:scale-95 transition">上一步</button>
           )}
           <button
             onClick={()=> step < steps.length-1 ? setStep(s=>s+1) : onDone({...data, ...targets})}
-            className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-semibold active:bg-emerald-600">
-            {step < steps.length-1 ? '下一步' : '開始記錄 →'}
+            className="flex-1 py-4 rounded-2xl bg-green-500 text-white font-semibold active:scale-95 transition shadow-lg shadow-green-500/30">
+            {step < steps.length-1 ? '下一步' : '開始記錄'}
           </button>
         </div>
       </div>
@@ -747,16 +676,13 @@ function Onboarding({ onDone }){
 }
 
 /* ============================================================
- *  Dashboard
+ *  Dashboard (今日)
  * ============================================================ */
-function Dashboard({ profile, onNav }){
+function Dashboard({ profile }){
   const today = todayStr();
-  const [entries, setEntries] = useState(()=> loadJSON(LS_KEYS.entries, []));
-  const [water, setWater] = useState(()=> loadJSON(LS_KEYS.water, []));
-  const [weights, setWeights] = useState(()=> loadJSON(LS_KEYS.weight, []));
-
-  useEffect(()=> saveJSON(LS_KEYS.entries, entries), [entries]);
-  useEffect(()=> saveJSON(LS_KEYS.water, water), [water]);
+  const entries = loadJSON(LS_KEYS.entries, []);
+  const waterLog = loadJSON(LS_KEYS.water, []);
+  const weights = loadJSON(LS_KEYS.weight, []);
 
   const todayEntries = entries.filter(e => e.date === today);
   const totals = todayEntries.reduce((a,e)=> ({
@@ -766,27 +692,24 @@ function Dashboard({ profile, onNav }){
     f: a.f + e.f * e.amount,
   }), {kcal:0,p:0,c:0,f:0});
 
-  const todayWater = water.filter(w => w.date === today).reduce((a,w)=>a+w.ml, 0);
+  const todayWater = waterLog.filter(w => w.date === today).reduce((a,w)=>a+w.ml, 0);
   const latestWeight = weights.length > 0 ? weights[weights.length-1] : null;
+  const firstWeight = weights[0];
 
-  const addWater = (ml) => setWater(w => {
-    const next = [...w, {ml, date: today, t: Date.now()}];
+  const [tick, setTick] = useState(0);
+  const refresh = () => setTick(t => t+1);
+  const addWater = (ml) => {
+    const next = [...waterLog, {ml, date: today, t: Date.now()}];
     saveJSON(LS_KEYS.water, next);
-    return next;
-  });
-  const undoWater = () => setWater(w => {
-    const todayList = w.filter(x => x.date === today);
-    if(todayList.length === 0) return w;
+    refresh();
+  };
+  const undoWater = () => {
+    const todayList = waterLog.filter(x => x.date === today);
+    if(todayList.length === 0) return;
     const lastT = Math.max(...todayList.map(x=>x.t));
-    const next = w.filter(x => x.t !== lastT);
-    saveJSON(LS_KEYS.water, next);
-    return next;
-  });
-  const deleteEntry = (id) => setEntries(es => {
-    const next = es.filter(e => e.id !== id);
-    saveJSON(LS_KEYS.entries, next);
-    return next;
-  });
+    saveJSON(LS_KEYS.water, waterLog.filter(x => x.t !== lastT));
+    refresh();
+  };
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -795,147 +718,659 @@ function Dashboard({ profile, onNav }){
     if(h < 18) return '下午好';
     return '晚安';
   })();
+  const dateStr = new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'short'});
+  const progressPct = Math.round((totals.kcal / profile.dailyKcal) * 100);
+
+  // 體重 mini 走勢
+  const wChart = useMemo(()=>{
+    if(weights.length < 2) return null;
+    const recent = weights.slice(-7);
+    const W = 280, H = 50;
+    const min = Math.min(...recent.map(x=>x.kg)) - 0.5;
+    const max = Math.max(...recent.map(x=>x.kg)) + 0.5;
+    const pts = recent.map((p,i)=>{
+      const x = (i/(recent.length-1))*W;
+      const y = H - ((p.kg - min)/(max-min))*H;
+      return `${x},${y}`;
+    }).join(' ');
+    const lastPt = recent[recent.length-1];
+    const lastX = W, lastY = H - ((lastPt.kg - min)/(max-min))*H;
+    return { pts, lastX, lastY, W, H };
+  }, [weights]);
 
   return (
-    <div className="bg-gray-100 min-h-screen pb-24">
-      {/* Header */}
-      <div className="bg-white px-5 pt-6 pb-4 border-b border-gray-100">
-        <div className="text-sm text-gray-500">{greeting}{profile.display_name ? '，' + profile.display_name : ''}</div>
-        <div className="text-xl font-bold text-gray-800">
-          今天 {new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'short'})}
+    <div className="min-h-screen bg-gray-50 pb-32" key={tick}>
+      <div className="px-5 pt-6 pb-3 flex justify-between items-start">
+        <div>
+          <div className="text-xs text-gray-400">{dateStr}</div>
+          <div className="text-2xl font-bold text-gray-900 mt-0.5">{greeting}{profile.display_name ? '，' + profile.display_name : ''}</div>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-medium">
+          {firstChar(profile.display_name)}
         </div>
       </div>
 
-      {/* Kcal Ring */}
-      <div className="bg-white py-6 flex flex-col items-center">
-        <KcalRing consumed={totals.kcal} target={profile.dailyKcal}/>
-        <div className="mt-4 w-full max-w-xs px-4 space-y-3">
-          <StatBar label="蛋白質" value={totals.p} target={profile.proteinG} color="bg-rose-400"/>
-          <StatBar label="碳水化合物" value={totals.c} target={profile.carbsG} color="bg-amber-400"/>
-          <StatBar label="脂肪" value={totals.f} target={profile.fatG} color="bg-blue-400"/>
-        </div>
-      </div>
-
-      {/* Water */}
-      <div className="bg-white mt-2 p-5">
-        <div className="flex justify-between items-end mb-3">
-          <div>
-            <div className="text-sm text-gray-500">今日喝水</div>
-            <div className="text-2xl font-bold text-cyan-600">
-              {todayWater} <span className="text-sm text-gray-400">/ {profile.waterMl} ml</span>
+      <div className="px-4 space-y-3">
+        {/* Kcal ring card */}
+        <div className="bg-white rounded-3xl p-5 pt-6 flex flex-col items-center">
+          <KcalRing consumed={totals.kcal} target={profile.dailyKcal} size={200}/>
+          <div className="w-full mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 text-center">
+            <div>
+              <div className="text-[11px] text-gray-400 mb-0.5">目標</div>
+              <div className="text-base font-bold text-gray-900">{profile.dailyKcal.toLocaleString()}</div>
+            </div>
+            <div className="border-l border-r border-gray-100">
+              <div className="text-[11px] text-gray-400 mb-0.5">已攝取</div>
+              <div className="text-base font-bold text-gray-900">{Math.round(totals.kcal).toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-400 mb-0.5">進度</div>
+              <div className="text-base font-bold text-green-500">{progressPct}%</div>
             </div>
           </div>
-          <button onClick={undoWater} className="text-xs text-gray-400 active:text-gray-600">⟲ 收回</button>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
-          <div className="h-full bg-cyan-400 rounded-full transition-all" style={{width: Math.min((todayWater/profile.waterMl)*100,100)+'%'}}/>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[{ml:150,l:'☕ 150'},{ml:250,l:'🥛 250'},{ml:500,l:'🧴 500'}].map(w => (
-            <button key={w.ml} onClick={()=>addWater(w.ml)}
-              className="py-2 rounded-lg bg-cyan-50 text-cyan-700 font-medium active:bg-cyan-100">+{w.l}</button>
-          ))}
-        </div>
-      </div>
 
-      {/* Today's Food */}
-      <div className="bg-white mt-2 p-5">
-        <div className="flex justify-between items-center mb-3">
-          <div className="font-semibold text-gray-800">今日飲食</div>
-          <button onClick={()=>onNav('addfood')} className="text-emerald-600 text-sm font-medium active:opacity-50">+ 新增</button>
+        {/* Macros card */}
+        <div className="bg-white rounded-3xl p-5 space-y-4">
+          <MacroBar label="蛋白質" value={totals.p} target={profile.proteinG} color="#f87171"/>
+          <MacroBar label="碳水" value={totals.c} target={profile.carbsG} color="#fbbf24"/>
+          <MacroBar label="脂肪" value={totals.f} target={profile.fatG} color="#60a5fa"/>
         </div>
-        {todayEntries.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            還沒有任何記錄<br/>
-            <button onClick={()=>onNav('addfood')} className="mt-3 px-4 py-2 bg-emerald-500 text-white rounded-full text-sm">記錄第一餐</button>
+
+        {/* Water card */}
+        <div className="bg-white rounded-3xl p-5">
+          <div className="flex justify-between items-baseline mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-cyan-500">{Icons.drop}</span>
+              <span className="text-sm font-medium text-gray-700">水分</span>
+            </div>
+            <div className="text-xs text-gray-400">
+              <span className="text-cyan-600 font-bold text-base">{todayWater}</span> / {profile.waterMl} ml
+            </div>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {['早餐','午餐','晚餐','點心'].map(meal => {
-              const items = todayEntries.filter(e => e.meal === meal);
-              if(items.length === 0) return null;
-              const mealKcal = items.reduce((a,i)=>a + i.kcal * i.amount, 0);
-              return (
-                <div key={meal} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex justify-between text-xs text-gray-500 mb-2">
-                    <span className="font-medium">{meal}</span>
-                    <span>{Math.round(mealKcal)} kcal</span>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+            <div className="h-full bg-cyan-400 rounded-full transition-all duration-500" style={{width: Math.min((todayWater/profile.waterMl)*100,100)+'%'}}/>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[150, 250, 500].map(ml => (
+              <button key={ml} onClick={()=>addWater(ml)}
+                className="py-2.5 rounded-2xl bg-cyan-50 text-cyan-700 text-sm font-medium active:scale-95 transition">
+                +{ml}
+              </button>
+            ))}
+            <button onClick={undoWater}
+              className="py-2.5 rounded-2xl bg-gray-100 text-gray-500 text-xs font-medium active:scale-95 transition flex items-center justify-center gap-1">
+              {Icons.undo} 收回
+            </button>
+          </div>
+        </div>
+
+        {/* Weight card */}
+        <div className="bg-white rounded-3xl p-5">
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-sm font-medium text-gray-700">體重趨勢</div>
+            {weights.length > 0 && <div className="text-xs text-gray-400">近 {Math.min(weights.length,7)} 筆</div>}
+          </div>
+          {latestWeight ? (
+            <>
+              <div className="flex items-baseline gap-3 mb-2">
+                <div className="text-4xl font-bold text-gray-900">{latestWeight.kg}</div>
+                <div className="text-sm text-gray-400">kg</div>
+                {firstWeight && firstWeight !== latestWeight && (
+                  <div className={'text-sm font-medium ' + (latestWeight.kg < firstWeight.kg ? 'text-green-500' : 'text-rose-500')}>
+                    {latestWeight.kg < firstWeight.kg ? '▼' : '▲'} {Math.abs(latestWeight.kg - firstWeight.kg).toFixed(1)} kg
                   </div>
-                  {items.map(item => (
-                    <div key={item.id} className="flex justify-between items-center py-1.5 group">
-                      <div className="flex-1">
-                        <div className="text-sm text-gray-800">{item.name}</div>
-                        <div className="text-[11px] text-gray-400">{item.amount} {item.unit} · {Math.round(item.kcal * item.amount)} kcal</div>
-                      </div>
-                      <button onClick={()=>deleteEntry(item.id)} className="text-xs text-red-400 px-2 active:opacity-50">刪除</button>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Weight */}
-      <div className="bg-white mt-2 p-5">
-        <div className="flex justify-between items-center mb-3">
-          <div>
-            <div className="text-sm text-gray-500">最新體重</div>
-            {latestWeight ? (
-              <div className="text-2xl font-bold text-gray-800">{latestWeight.kg} <span className="text-sm text-gray-400">kg</span></div>
-            ) : (
-              <div className="text-sm text-gray-400">尚未記錄</div>
-            )}
-          </div>
-          <button onClick={()=>onNav('weight')} className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 active:opacity-50">記錄體重</button>
+                )}
+              </div>
+              {wChart && (
+                <svg viewBox={`0 0 ${wChart.W+8} ${wChart.H+8}`} className="w-full mt-1" style={{maxHeight:'60px'}}>
+                  <polyline points={wChart.pts} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" transform="translate(0 4)"/>
+                  <circle cx={wChart.lastX} cy={wChart.lastY+4} r="4" fill="#22c55e"/>
+                </svg>
+              )}
+              <div className="flex justify-between text-[11px] text-gray-400 mt-1">
+                <span>距目標 {(latestWeight.kg - profile.target_weight_kg).toFixed(1)} kg</span>
+                <span>目標 {profile.target_weight_kg} kg</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <div className="text-gray-400 text-sm mb-2">還沒記錄體重</div>
+              <div className="text-[11px] text-gray-400">點下方「體重」分頁開始記錄</div>
+            </div>
+          )}
         </div>
-        {weights.length >= 2 && (
-          <div className="text-xs text-gray-500 flex justify-between">
-            <span>距目標 {(latestWeight.kg - profile.target_weight_kg).toFixed(1)} kg</span>
-            <span>{ latestWeight.kg < (weights[weights.length-2]?.kg ?? latestWeight.kg) ? '↓ 比上次輕了' : '↑ 比上次重了'}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 grid grid-cols-4 z-50">
-        {[
-          {k:'home',label:'今日',ic:'🏠'},
-          {k:'addfood',label:'記錄',ic:'➕'},
-          {k:'weight',label:'體重',ic:'⚖️'},
-          {k:'settings',label:'設定',ic:'⚙️'},
-        ].map(n => (
-          <button key={n.k} onClick={()=>onNav(n.k)} className="py-3 text-center active:bg-gray-50">
-            <div className="text-xl">{n.ic}</div>
-            <div className="text-[10px] text-gray-500">{n.label}</div>
-          </button>
-        ))}
       </div>
     </div>
   );
 }
 
 /* ============================================================
- *  Add Food
+ *  Record (紀錄) — 飲食紀錄獨立分頁
  * ============================================================ */
-function AddFood({ onBack, onAdded }){
+function Record({ onAdd }){
+  const today = todayStr();
+  const [entries, setEntries] = useState(()=> loadJSON(LS_KEYS.entries, []));
+  const todayEntries = entries.filter(e => e.date === today);
+  const totalKcal = todayEntries.reduce((a,e)=> a + e.kcal * e.amount, 0);
+
+  const deleteEntry = (id) => {
+    const next = entries.filter(e => e.id !== id);
+    saveJSON(LS_KEYS.entries, next);
+    setEntries(next);
+  };
+
+  const meals = ['早餐','午餐','晚餐','點心'];
+  return (
+    <div className="min-h-screen bg-gray-50 pb-32">
+      <div className="px-5 pt-6 pb-3">
+        <div className="text-xs text-gray-400">今日 · 共 {Math.round(totalKcal).toLocaleString()} kcal</div>
+        <div className="text-2xl font-bold text-gray-900 mt-0.5">飲食紀錄</div>
+      </div>
+      <div className="px-4 space-y-3">
+        {meals.map(meal => {
+          const items = todayEntries.filter(e => e.meal === meal);
+          const mealKcal = items.reduce((a,i)=>a + i.kcal * i.amount, 0);
+          return (
+            <div key={meal} className="bg-white rounded-3xl p-5">
+              <div className="flex justify-between items-baseline mb-3">
+                <div className="font-bold text-gray-900">{meal}</div>
+                <div className="text-sm text-gray-400">
+                  {items.length > 0 ? <span><span className="text-gray-700 font-medium">{Math.round(mealKcal)}</span> kcal</span> : <span>0 kcal</span>}
+                </div>
+              </div>
+              {items.length === 0 ? (
+                <div className="text-sm text-gray-400 py-2">尚未記錄</div>
+              ) : (
+                <div className="space-y-2.5">
+                  {items.map(item => (
+                    <div key={item.id} className="flex justify-between items-center py-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-900 font-medium truncate">{item.name}</div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {item.amount} {item.unit}
+                          {' · '}蛋白 {Math.round(item.p * item.amount)} · 碳水 {Math.round(item.c * item.amount)} · 脂肪 {Math.round(item.f * item.amount)} g
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 ml-3">
+                        <div className="text-base font-bold text-gray-900">{Math.round(item.kcal * item.amount)}</div>
+                        <button onClick={()=>deleteEntry(item.id)}
+                          className="w-7 h-7 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center active:scale-90 transition">
+                          {Icons.minus}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button onClick={()=>onAdd(meal)} className="mt-3 pt-3 border-t border-gray-100 w-full flex items-center gap-2 text-green-500 text-sm font-medium active:opacity-50">
+                {Icons.plusSmall} 新增食物
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ *  Weight (體重)
+ * ============================================================ */
+function Weight({ profile }){
+  const [weights, setWeights] = useState(()=> loadJSON(LS_KEYS.weight, []));
+  const [input, setInput] = useState(()=> weights.length ? weights[weights.length-1].kg : profile.current_weight_kg);
+  const [showInput, setShowInput] = useState(false);
+
+  const save = () => {
+    const kg = parseFloat(input);
+    if(!kg || kg < 30 || kg > 250) return;
+    const date = todayStr();
+    const next = [...weights.filter(w => w.date !== date), {kg, date, t: Date.now()}]
+      .sort((a,b)=> a.date.localeCompare(b.date));
+    saveJSON(LS_KEYS.weight, next);
+    setWeights(next);
+    setShowInput(false);
+  };
+  const remove = (date) => {
+    const next = weights.filter(w => w.date !== date);
+    saveJSON(LS_KEYS.weight, next);
+    setWeights(next);
+  };
+
+  const chartData = useMemo(()=>{
+    if(weights.length === 0) return null;
+    const W = 320, H = 160, padX = 16, padY = 20;
+    const minKg = Math.min(...weights.map(x=>x.kg), profile.target_weight_kg) - 0.5;
+    const maxKg = Math.max(...weights.map(x=>x.kg), profile.target_weight_kg) + 0.5;
+    const xs = weights.map((p,i)=> padX + (i/(Math.max(weights.length-1,1)))*(W-padX*2));
+    const ys = weights.map(p => padY + (1 - (p.kg - minKg)/(maxKg - minKg))*(H-padY*2));
+    const points = xs.map((x,i)=> `${x},${ys[i]}`).join(' ');
+    const targetY = padY + (1 - (profile.target_weight_kg - minKg)/(maxKg - minKg))*(H-padY*2);
+    return { W, H, points, targetY, xs, ys };
+  }, [weights, profile.target_weight_kg]);
+
+  const latest = weights[weights.length-1];
+  const first = weights[0];
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-32">
+      <div className="px-5 pt-6 pb-3">
+        <div className="text-xs text-gray-400">目標 {profile.target_weight_kg.toFixed(1)} kg</div>
+        <div className="text-2xl font-bold text-gray-900 mt-0.5">體重</div>
+      </div>
+
+      <div className="px-4 space-y-3">
+        <div className="bg-white rounded-3xl p-5">
+          {latest ? (
+            <>
+              <div className="flex justify-between items-baseline mb-3">
+                <div className="flex items-baseline gap-2">
+                  <div className="text-5xl font-bold text-gray-900">{latest.kg}</div>
+                  <div className="text-gray-400">kg</div>
+                </div>
+                {first && first.kg !== latest.kg && (
+                  <div className={'text-sm font-medium ' + (latest.kg < first.kg ? 'text-green-500' : 'text-rose-500')}>
+                    {latest.kg < first.kg ? '▼' : '▲'} {Math.abs(latest.kg - first.kg).toFixed(1)} kg · 距目標 {Math.abs(latest.kg - profile.target_weight_kg).toFixed(1)}
+                  </div>
+                )}
+              </div>
+              {chartData && (
+                <>
+                  <svg viewBox={`0 0 ${chartData.W} ${chartData.H}`} className="w-full">
+                    <line x1={16} x2={chartData.W-16} y1={chartData.targetY} y2={chartData.targetY}
+                      stroke="#fca5a5" strokeDasharray="4 4" strokeWidth="1.5"/>
+                    <polyline points={chartData.points} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+                    {weights.map((p,i)=>(
+                      <circle key={i} cx={chartData.xs[i]} cy={chartData.ys[i]} r={i === weights.length-1 ? 5 : 3} fill="#22c55e"/>
+                    ))}
+                  </svg>
+                  <div className="flex justify-between text-[11px] text-gray-400 mt-2 px-2">
+                    <span>{weights[0].date.slice(5)}</span>
+                    <span className="text-green-500">目標線 {profile.target_weight_kg.toFixed(1)} kg</span>
+                    <span>今天</span>
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-sm">還沒有任何記錄</div>
+            </div>
+          )}
+        </div>
+
+        {showInput ? (
+          <div className="bg-white rounded-3xl p-5">
+            <div className="text-sm text-gray-500 mb-3">記錄今天的體重</div>
+            <div className="flex gap-2">
+              <input type="number" step="0.1" value={input} autoFocus
+                onChange={e=>setInput(e.target.value)}
+                className="flex-1 px-4 py-4 rounded-2xl border-2 border-green-400 text-3xl font-bold text-center outline-none"/>
+              <button onClick={save}
+                className="px-6 rounded-2xl bg-green-500 text-white font-semibold active:scale-95 transition shadow-lg shadow-green-500/30">
+                儲存
+              </button>
+              <button onClick={()=>setShowInput(false)}
+                className="px-4 rounded-2xl bg-gray-100 text-gray-600 active:scale-95 transition">
+                取消
+              </button>
+            </div>
+            <div className="text-[11px] text-gray-400 mt-2">同一天會覆蓋舊記錄</div>
+          </div>
+        ) : (
+          <button onClick={()=>setShowInput(true)}
+            className="w-full bg-green-500 text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-green-500/30">
+            {Icons.plusSmall} 記錄今日體重
+          </button>
+        )}
+
+        <div className="bg-white rounded-3xl overflow-hidden">
+          {weights.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">尚無歷史記錄</div>
+          ) : (
+            [...weights].reverse().map((w,i,arr) => {
+              const prev = arr[i+1];
+              const delta = prev ? (w.kg - prev.kg).toFixed(1) : null;
+              return (
+                <div key={w.date} className={'flex justify-between items-center px-5 py-4 ' + (i<arr.length-1?'border-b border-gray-50':'')}>
+                  <div className="text-sm text-gray-400">{w.date.slice(5).replace('-','/')}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-lg font-bold text-gray-900">{w.kg} <span className="text-xs text-gray-400 font-normal">kg</span></div>
+                    {delta && (
+                      <div className={'text-xs font-medium w-12 text-right ' + (parseFloat(delta) < 0 ? 'text-green-500' : 'text-rose-500')}>
+                        {parseFloat(delta) > 0 ? '+' : ''}{delta}
+                      </div>
+                    )}
+                    <button onClick={()=>remove(w.date)} className="text-gray-300 active:opacity-50">
+                      {Icons.trash}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ *  Me (我的) — 設定 + 目標
+ * ============================================================ */
+function Me({ profile, onUpdate, onReset }){
+  const [edit, setEdit] = useState(()=>({
+    ...profile,
+    useCustomTargets: profile.useCustomTargets || false,
+    customKcal: profile.customKcal ?? profile.dailyKcal,
+    customProtein: profile.customProtein ?? profile.proteinG,
+    customCarbs: profile.customCarbs ?? profile.carbsG,
+    customFat: profile.customFat ?? profile.fatG,
+    customWater: profile.customWater ?? profile.waterMl,
+  }));
+  const [view, setView] = useState('main'); // main | goal | personal | data
+
+  const newTargets = useMemo(()=> calcDailyTargets(edit), [edit]);
+
+  const save = () => {
+    const finalTargets = edit.useCustomTargets ? {
+      ...newTargets,
+      dailyKcal: +edit.customKcal || newTargets.dailyKcal,
+      proteinG: +edit.customProtein || newTargets.proteinG,
+      carbsG: +edit.customCarbs || newTargets.carbsG,
+      fatG: +edit.customFat || newTargets.fatG,
+      waterMl: +edit.customWater || newTargets.waterMl,
+    } : newTargets;
+    onUpdate({...edit, ...finalTargets});
+    setView('main');
+  };
+
+  const exportData = () => {
+    const data = {
+      profile: loadJSON(LS_KEYS.profile, {}),
+      entries: loadJSON(LS_KEYS.entries, []),
+      water: loadJSON(LS_KEYS.water, []),
+      weights: loadJSON(LS_KEYS.weight, []),
+      exported_at: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `輕食日記-${todayStr()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const Stepper = ({ value, onChange, step=10, unit, max, min }) => (
+    <div className="flex items-center justify-between bg-gray-100 rounded-2xl p-3">
+      <button onClick={()=>onChange(Math.max(min ?? 0, +value - step))}
+        className="w-11 h-11 rounded-full bg-white text-gray-500 flex items-center justify-center active:scale-90 transition shadow-sm">
+        {Icons.minus}
+      </button>
+      <div className="flex items-baseline gap-1">
+        <span className="text-3xl font-bold text-gray-900">{(+value).toLocaleString()}</span>
+        <span className="text-sm text-gray-400">{unit}</span>
+      </div>
+      <button onClick={()=>onChange(Math.min(max ?? 99999, +value + step))}
+        className="w-11 h-11 rounded-full bg-green-500 text-white flex items-center justify-center active:scale-90 transition shadow-md shadow-green-500/30">
+        {Icons.plusSmall}
+      </button>
+    </div>
+  );
+
+  if(view === 'main'){
+    return (
+      <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="px-5 pt-6 pb-4">
+          <div className="text-2xl font-bold text-gray-900">我的</div>
+        </div>
+        <div className="px-4 space-y-3">
+          <div className="bg-white rounded-3xl p-5 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xl font-bold">
+              {firstChar(profile.display_name)}
+            </div>
+            <div className="flex-1">
+              <div className="text-lg font-bold text-gray-900">{profile.display_name || '未命名'}</div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {profile.height_cm} cm · {profile.current_weight_kg} → {profile.target_weight_kg} kg · BMI {profile.bmi}
+              </div>
+            </div>
+          </div>
+
+          <button onClick={()=>setView('goal')} className="w-full bg-white rounded-3xl p-5 flex items-center justify-between active:bg-gray-50 transition">
+            <div className="text-left">
+              <div className="font-medium text-gray-900">目標設定</div>
+              <div className="text-xs text-gray-400 mt-0.5">每日熱量 {profile.dailyKcal} · 目標體重 {profile.target_weight_kg} kg</div>
+            </div>
+            <span className="text-gray-300">{Icons.chevR}</span>
+          </button>
+
+          <button onClick={()=>setView('personal')} className="w-full bg-white rounded-3xl p-5 flex items-center justify-between active:bg-gray-50 transition">
+            <div className="text-left">
+              <div className="font-medium text-gray-900">個人資料</div>
+              <div className="text-xs text-gray-400 mt-0.5">基本資料、活動量、減重步調</div>
+            </div>
+            <span className="text-gray-300">{Icons.chevR}</span>
+          </button>
+
+          <button onClick={()=>setView('data')} className="w-full bg-white rounded-3xl p-5 flex items-center justify-between active:bg-gray-50 transition">
+            <div className="text-left">
+              <div className="font-medium text-gray-900">資料管理</div>
+              <div className="text-xs text-gray-400 mt-0.5">匯出 / 重置</div>
+            </div>
+            <span className="text-gray-300">{Icons.chevR}</span>
+          </button>
+
+          <div className="text-center text-[11px] text-gray-400 pt-6">輕食日記 MVP v0.4</div>
+        </div>
+      </div>
+    );
+  }
+
+  if(view === 'goal'){
+    return (
+      <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="px-5 pt-6 pb-4 flex items-center gap-2">
+          <button onClick={()=>setView('main')} className="text-gray-700 -ml-2 p-1 active:opacity-50">{Icons.back}</button>
+          <div className="text-2xl font-bold text-gray-900">目標設定</div>
+        </div>
+        <div className="px-4 space-y-3">
+          <div className="bg-white rounded-3xl p-5">
+            <div className="text-sm text-gray-400 mb-3">每日熱量目標</div>
+            <Stepper value={edit.useCustomTargets ? edit.customKcal : newTargets.dailyKcal}
+              onChange={v=>setEdit({...edit, useCustomTargets:true, customKcal:v})}
+              step={50} unit="kcal" min={800} max={4000}/>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5">
+            <div className="text-sm text-gray-400 mb-3">目標體重</div>
+            <Stepper value={edit.target_weight_kg}
+              onChange={v=>setEdit({...edit, target_weight_kg:v})}
+              step={0.5} unit="kg" min={30} max={200}/>
+          </div>
+
+          <div className="bg-white rounded-3xl divide-y divide-gray-50">
+            <div className="px-5 py-4 flex justify-between items-center">
+              <span className="text-gray-700">蛋白質目標</span>
+              <span className="text-gray-400">
+                <input type="number" value={edit.useCustomTargets ? edit.customProtein : newTargets.proteinG}
+                  onChange={e=>setEdit({...edit, useCustomTargets:true, customProtein:+e.target.value})}
+                  className="w-16 text-right bg-transparent outline-none text-gray-900 font-medium"/>
+                <span className="text-sm ml-1">g</span>
+              </span>
+            </div>
+            <div className="px-5 py-4 flex justify-between items-center">
+              <span className="text-gray-700">碳水目標</span>
+              <span className="text-gray-400">
+                <input type="number" value={edit.useCustomTargets ? edit.customCarbs : newTargets.carbsG}
+                  onChange={e=>setEdit({...edit, useCustomTargets:true, customCarbs:+e.target.value})}
+                  className="w-16 text-right bg-transparent outline-none text-gray-900 font-medium"/>
+                <span className="text-sm ml-1">g</span>
+              </span>
+            </div>
+            <div className="px-5 py-4 flex justify-between items-center">
+              <span className="text-gray-700">脂肪目標</span>
+              <span className="text-gray-400">
+                <input type="number" value={edit.useCustomTargets ? edit.customFat : newTargets.fatG}
+                  onChange={e=>setEdit({...edit, useCustomTargets:true, customFat:+e.target.value})}
+                  className="w-16 text-right bg-transparent outline-none text-gray-900 font-medium"/>
+                <span className="text-sm ml-1">g</span>
+              </span>
+            </div>
+            <div className="px-5 py-4 flex justify-between items-center">
+              <span className="text-gray-700">水分目標</span>
+              <span className="text-gray-400">
+                <input type="number" value={edit.useCustomTargets ? edit.customWater : newTargets.waterMl}
+                  onChange={e=>setEdit({...edit, useCustomTargets:true, customWater:+e.target.value})}
+                  className="w-20 text-right bg-transparent outline-none text-gray-900 font-medium"/>
+                <span className="text-sm ml-1">ml</span>
+              </span>
+            </div>
+          </div>
+
+          {edit.useCustomTargets && (
+            <button onClick={()=>setEdit({...edit, useCustomTargets:false})}
+              className="w-full py-3 rounded-2xl bg-gray-100 text-gray-600 text-sm active:scale-95 transition">
+              ↻ 拉回到自動計算
+            </button>
+          )}
+
+          <button onClick={save}
+            className="w-full bg-green-500 text-white py-4 rounded-2xl font-semibold active:scale-95 transition shadow-lg shadow-green-500/30">
+            儲存
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if(view === 'personal'){
+    return (
+      <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="px-5 pt-6 pb-4 flex items-center gap-2">
+          <button onClick={()=>setView('main')} className="text-gray-700 -ml-2 p-1 active:opacity-50">{Icons.back}</button>
+          <div className="text-2xl font-bold text-gray-900">個人資料</div>
+        </div>
+        <div className="px-4 space-y-3">
+          <div className="bg-white rounded-3xl p-5 space-y-4">
+            <div>
+              <label className="text-xs text-gray-400">暱稱</label>
+              <input value={edit.display_name||''} onChange={e=>setEdit({...edit, display_name:e.target.value})}
+                className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none"/>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-400">身高 cm</label>
+                <input type="number" value={edit.height_cm} onChange={e=>setEdit({...edit, height_cm:+e.target.value})}
+                  className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none"/>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">生日</label>
+                <input type="date" value={edit.birthday} onChange={e=>setEdit({...edit, birthday:e.target.value})}
+                  className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none"/>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">目前 kg</label>
+                <input type="number" step="0.1" value={edit.current_weight_kg} onChange={e=>setEdit({...edit, current_weight_kg:+e.target.value})}
+                  className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none"/>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">目標 kg</label>
+                <input type="number" step="0.1" value={edit.target_weight_kg} onChange={e=>setEdit({...edit, target_weight_kg:+e.target.value})}
+                  className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none"/>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400">性別</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {[{v:'female',l:'女'},{v:'male',l:'男'}].map(g => (
+                  <button key={g.v} onClick={()=>setEdit({...edit, gender:g.v})}
+                    className={'py-3 rounded-2xl text-sm font-medium transition active:scale-95 ' + (edit.gender===g.v?'bg-green-500 text-white':'bg-gray-100 text-gray-600')}>
+                    {g.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400">活動量</label>
+              <select value={edit.activity_level} onChange={e=>setEdit({...edit, activity_level:e.target.value})}
+                className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none">
+                <option value="sedentary">久坐</option>
+                <option value="light">輕度</option>
+                <option value="moderate">中度</option>
+                <option value="active">高度</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400">減重步調</label>
+              <select value={edit.weight_loss_pace} onChange={e=>setEdit({...edit, weight_loss_pace:e.target.value})}
+                className="w-full mt-1 px-4 py-3 rounded-2xl bg-gray-50 outline-none">
+                <option value="mild">溫和 -0.25 kg/週</option>
+                <option value="standard">標準 -0.5 kg/週</option>
+                <option value="aggressive">積極 -0.75 kg/週</option>
+              </select>
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-2xl p-4 text-sm text-green-800">
+            <div className="font-medium mb-1">自動計算的目標</div>
+            <div className="text-xs">熱量 {newTargets.dailyKcal} · 蛋白 {newTargets.proteinG}g · 碳水 {newTargets.carbsG}g · 脂肪 {newTargets.fatG}g · 水分 {newTargets.waterMl}ml</div>
+            {newTargets.floorApplied && <div className="text-amber-700 text-xs mt-1">⚠️ 已套用熱量下限保護</div>}
+          </div>
+          <button onClick={save}
+            className="w-full bg-green-500 text-white py-4 rounded-2xl font-semibold active:scale-95 transition shadow-lg shadow-green-500/30">
+            儲存
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if(view === 'data'){
+    return (
+      <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="px-5 pt-6 pb-4 flex items-center gap-2">
+          <button onClick={()=>setView('main')} className="text-gray-700 -ml-2 p-1 active:opacity-50">{Icons.back}</button>
+          <div className="text-2xl font-bold text-gray-900">資料管理</div>
+        </div>
+        <div className="px-4 space-y-3">
+          <button onClick={exportData}
+            className="w-full bg-white rounded-3xl p-5 text-left active:bg-gray-50 transition">
+            <div className="font-medium text-gray-900">匯出資料</div>
+            <div className="text-xs text-gray-400 mt-1">下載 JSON 備份檔</div>
+          </button>
+          <button onClick={()=>{
+            if(confirm('確定要重置所有資料嗎？這不能還原。')) onReset();
+          }}
+            className="w-full bg-white rounded-3xl p-5 text-left active:bg-red-50 transition">
+            <div className="font-medium text-red-500">重置所有資料</div>
+            <div className="text-xs text-gray-400 mt-1">清空個人資料、飲食、體重</div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* ============================================================
+ *  AddFood Modal (新增食物 — 底部 sheet)
+ * ============================================================ */
+function AddFoodModal({ defaultMeal, onClose, onAdded }){
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('全部');
-  const [selected, setSelected] = useState(null);
-  const [amount, setAmount] = useState(1);
-  const [meal, setMeal] = useState(() => {
+  const [meal, setMeal] = useState(defaultMeal || (() => {
     const h = new Date().getHours();
     if(h < 10) return '早餐';
     if(h < 14) return '午餐';
     if(h < 17) return '點心';
     if(h < 20) return '晚餐';
     return '點心';
-  });
+  })());
+  const [selected, setSelected] = useState(null);
+  const [amount, setAmount] = useState(1);
   const [showManual, setShowManual] = useState(false);
   const [manual, setManual] = useState({ name:'', kcal:'', p:'', c:'', f:'', unit:'份' });
 
-  // 最近吃過
   const recent = useMemo(()=>{
     const all = loadJSON(LS_KEYS.entries, []);
     const seen = new Set();
@@ -956,517 +1391,276 @@ function AddFood({ onBack, onAdded }){
     return list;
   }, [search, category]);
 
-  const commit = (food, amt, customMeal) => {
+  const quickAdd = (food, amt=1) => {
     const entries = loadJSON(LS_KEYS.entries, []);
     const newEntry = {
-      id: 'e_' + Date.now(),
+      id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
       name: food.name,
       kcal: food.kcal, p: food.p||0, c: food.c||0, f: food.f||0,
       unit: food.unit,
       amount: amt,
-      meal: customMeal || meal,
+      meal,
       date: todayStr(),
       t: Date.now(),
     };
-    const next = [...entries, newEntry];
-    saveJSON(LS_KEYS.entries, next);
+    saveJSON(LS_KEYS.entries, [...entries, newEntry]);
     onAdded && onAdded();
+  };
+
+  const commitWithAmount = () => {
+    quickAdd(selected, amount);
+    setSelected(null);
+    setAmount(1);
   };
 
   const submitManual = () => {
     if(!manual.name.trim() || !manual.kcal) return;
-    commit({
+    quickAdd({
       name: manual.name.trim(),
       unit: manual.unit || '份',
       kcal: +manual.kcal,
       p: +(manual.p||0), c: +(manual.c||0), f: +(manual.f||0),
-    }, 1, meal);
+    }, 1);
+    setShowManual(false);
+    setManual({ name:'', kcal:'', p:'', c:'', f:'', unit:'份' });
   };
 
+  // 詳細頁
   if(selected){
     return (
-      <ScreenShell title="調整份量" onBack={()=>setSelected(null)}>
-        <div className="p-5 space-y-4">
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="text-lg font-semibold text-gray-800">{selected.name}</div>
-            <div className="text-xs text-gray-500 mb-3">{selected.cat} · 每 1 {selected.unit}</div>
-            <div className="grid grid-cols-4 gap-2 text-center text-xs mb-4">
-              <div><div className="text-base font-bold text-emerald-600">{Math.round(selected.kcal*amount)}</div><div className="text-gray-500">大卡</div></div>
-              <div><div className="text-base font-bold text-rose-500">{(selected.p*amount).toFixed(1)}</div><div className="text-gray-500">蛋白</div></div>
-              <div><div className="text-base font-bold text-amber-500">{(selected.c*amount).toFixed(1)}</div><div className="text-gray-500">碳水</div></div>
-              <div><div className="text-base font-bold text-blue-500">{(selected.f*amount).toFixed(1)}</div><div className="text-gray-500">脂肪</div></div>
-            </div>
-            <div className="text-sm text-gray-600 mb-2">份量</div>
-            <div className="grid grid-cols-5 gap-2 mb-3">
-              {[0.5, 0.75, 1, 1.5, 2].map(a => (
-                <button key={a} onClick={()=>setAmount(a)}
-                  className={`py-2 rounded-lg border-2 text-sm font-medium ${amount===a?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200 text-gray-600'}`}>
-                  {a===0.5?'半份':a===1?'一份':a+'份'}
-                </button>
-              ))}
-            </div>
-            <input type="number" step="0.1" value={amount}
-              onChange={e=>setAmount(+e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-center text-sm"/>
+      <div className="fade-in" style={{position:'fixed',inset:0,zIndex:100}}>
+        <div className="absolute inset-0 bg-black/40" onClick={()=>setSelected(null)}/>
+        <div className="absolute left-0 right-0 bottom-0 bg-gray-50 rounded-t-3xl max-w-md mx-auto sheet-in" style={{maxHeight:'90vh', overflow:'auto'}}>
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 bg-gray-300 rounded-full"/>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="text-sm text-gray-600 mb-2">用餐</div>
-            <div className="grid grid-cols-4 gap-2">
-              {['早餐','午餐','晚餐','點心'].map(m => (
-                <button key={m} onClick={()=>setMeal(m)}
-                  className={`py-2 rounded-lg border-2 text-sm ${meal===m?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200 text-gray-600'}`}>
-                  {m}
-                </button>
-              ))}
-            </div>
+          <div className="flex justify-between items-center px-5 pt-2 pb-3">
+            <button onClick={()=>setSelected(null)} className="text-gray-500 active:opacity-50">{Icons.back}</button>
+            <div className="font-bold text-gray-900">調整份量</div>
+            <div className="w-6"/>
           </div>
-          <button onClick={()=>commit(selected, amount, meal)}
-            className="w-full py-4 rounded-xl bg-emerald-500 text-white font-semibold active:bg-emerald-600">
-            加到{meal} · {Math.round(selected.kcal*amount)} 大卡
-          </button>
+          <div className="p-4 space-y-3">
+            <div className="bg-white rounded-3xl p-5">
+              <div className="text-lg font-bold text-gray-900">{selected.name}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{selected.cat} · 每 1 {selected.unit}</div>
+              <div className="grid grid-cols-4 gap-2 text-center mt-4 pt-4 border-t border-gray-100">
+                <div><div className="text-lg font-bold text-green-500">{Math.round(selected.kcal*amount)}</div><div className="text-[10px] text-gray-400">大卡</div></div>
+                <div><div className="text-lg font-bold text-red-400">{(selected.p*amount).toFixed(1)}</div><div className="text-[10px] text-gray-400">蛋白 g</div></div>
+                <div><div className="text-lg font-bold text-amber-500">{(selected.c*amount).toFixed(1)}</div><div className="text-[10px] text-gray-400">碳水 g</div></div>
+                <div><div className="text-lg font-bold text-blue-400">{(selected.f*amount).toFixed(1)}</div><div className="text-[10px] text-gray-400">脂肪 g</div></div>
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl p-5">
+              <div className="text-sm text-gray-500 mb-3">份量</div>
+              <div className="grid grid-cols-5 gap-2 mb-3">
+                {[0.5, 0.75, 1, 1.5, 2].map(a => (
+                  <button key={a} onClick={()=>setAmount(a)}
+                    className={'py-2.5 rounded-2xl text-sm font-medium transition active:scale-95 ' + (amount===a?'bg-green-500 text-white':'bg-gray-100 text-gray-600')}>
+                    {a===0.5?'半份':a===1?'一份':a+'份'}
+                  </button>
+                ))}
+              </div>
+              <input type="number" step="0.1" value={amount}
+                onChange={e=>setAmount(+e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-gray-50 text-center outline-none"/>
+            </div>
+            <div className="bg-white rounded-3xl p-5">
+              <div className="text-sm text-gray-500 mb-3">用餐</div>
+              <div className="grid grid-cols-4 gap-2">
+                {['早餐','午餐','晚餐','點心'].map(m => (
+                  <button key={m} onClick={()=>setMeal(m)}
+                    className={'py-2.5 rounded-2xl text-sm font-medium transition active:scale-95 ' + (meal===m?'bg-green-500 text-white':'bg-gray-100 text-gray-600')}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={commitWithAmount}
+              className="w-full py-4 rounded-2xl bg-green-500 text-white font-semibold active:scale-95 transition shadow-lg shadow-green-500/30">
+              加到{meal} · {Math.round(selected.kcal*amount)} kcal
+            </button>
+          </div>
         </div>
-      </ScreenShell>
+      </div>
     );
   }
 
   if(showManual){
     return (
-      <ScreenShell title="手動輸入" onBack={()=>setShowManual(false)}>
-        <div className="p-5 space-y-3">
-          <input className="w-full px-4 py-3 rounded-lg border border-gray-300" placeholder="食物名稱" value={manual.name} onChange={e=>setManual({...manual, name:e.target.value})}/>
-          <div className="grid grid-cols-2 gap-2">
-            <input type="number" className="px-4 py-3 rounded-lg border border-gray-300" placeholder="熱量 kcal" value={manual.kcal} onChange={e=>setManual({...manual, kcal:e.target.value})}/>
-            <input className="px-4 py-3 rounded-lg border border-gray-300" placeholder="單位（份/碗/個）" value={manual.unit} onChange={e=>setManual({...manual, unit:e.target.value})}/>
+      <div className="fade-in" style={{position:'fixed',inset:0,zIndex:100}}>
+        <div className="absolute inset-0 bg-black/40" onClick={()=>setShowManual(false)}/>
+        <div className="absolute left-0 right-0 bottom-0 bg-gray-50 rounded-t-3xl max-w-md mx-auto sheet-in" style={{maxHeight:'90vh', overflow:'auto'}}>
+          <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-300 rounded-full"/></div>
+          <div className="flex justify-between items-center px-5 pt-2 pb-3">
+            <button onClick={()=>setShowManual(false)} className="text-gray-500 active:opacity-50">{Icons.back}</button>
+            <div className="font-bold text-gray-900">手動輸入</div>
+            <button onClick={submitManual} className="text-green-500 font-medium active:opacity-50">完成</button>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <input type="number" className="px-3 py-3 rounded-lg border border-gray-300" placeholder="蛋白 g" value={manual.p} onChange={e=>setManual({...manual, p:e.target.value})}/>
-            <input type="number" className="px-3 py-3 rounded-lg border border-gray-300" placeholder="碳水 g" value={manual.c} onChange={e=>setManual({...manual, c:e.target.value})}/>
-            <input type="number" className="px-3 py-3 rounded-lg border border-gray-300" placeholder="脂肪 g" value={manual.f} onChange={e=>setManual({...manual, f:e.target.value})}/>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600 mb-2">用餐</div>
-            <div className="grid grid-cols-4 gap-2">
-              {['早餐','午餐','晚餐','點心'].map(m => (
-                <button key={m} onClick={()=>setMeal(m)}
-                  className={`py-2 rounded-lg border-2 text-sm ${meal===m?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200'}`}>{m}</button>
-              ))}
+          <div className="p-4 space-y-3">
+            <div className="bg-white rounded-3xl p-5 space-y-3">
+              <input className="w-full px-4 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="食物名稱" value={manual.name} onChange={e=>setManual({...manual, name:e.target.value})}/>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="number" className="px-4 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="熱量 kcal" value={manual.kcal} onChange={e=>setManual({...manual, kcal:e.target.value})}/>
+                <input className="px-4 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="單位（份/碗）" value={manual.unit} onChange={e=>setManual({...manual, unit:e.target.value})}/>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <input type="number" className="px-3 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="蛋白 g" value={manual.p} onChange={e=>setManual({...manual, p:e.target.value})}/>
+                <input type="number" className="px-3 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="碳水 g" value={manual.c} onChange={e=>setManual({...manual, c:e.target.value})}/>
+                <input type="number" className="px-3 py-3 rounded-2xl bg-gray-50 outline-none" placeholder="脂肪 g" value={manual.f} onChange={e=>setManual({...manual, f:e.target.value})}/>
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 mb-2">用餐</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {['早餐','午餐','晚餐','點心'].map(m => (
+                    <button key={m} onClick={()=>setMeal(m)}
+                      className={'py-2.5 rounded-2xl text-sm font-medium transition active:scale-95 ' + (meal===m?'bg-green-500 text-white':'bg-gray-100 text-gray-600')}>{m}</button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-          <button onClick={submitManual}
-            className="w-full py-4 rounded-xl bg-emerald-500 text-white font-semibold active:bg-emerald-600">
-            儲存到 {meal}
-          </button>
         </div>
-      </ScreenShell>
+      </div>
     );
   }
 
+  // 主清單
   return (
-    <ScreenShell title="記錄飲食" onBack={onBack} rightAction={
-      <button onClick={()=>setShowManual(true)} className="text-emerald-600 text-sm font-medium">手動</button>
-    }>
-      <div className="p-3">
-        <input
-          autoFocus
-          value={search}
-          onChange={e=>setSearch(e.target.value)}
-          placeholder="搜尋食物⋯（如：雞腿、珍奶）"
-          className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200"
-        />
+    <div className="fade-in" style={{position:'fixed',inset:0,zIndex:100}}>
+      <div className="absolute inset-0 bg-black/40" onClick={onClose}/>
+      <div className="absolute left-0 right-0 bottom-0 bg-gray-50 rounded-t-3xl max-w-md mx-auto sheet-in" style={{height:'90vh', display:'flex', flexDirection:'column'}}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full"/>
+        </div>
+        <div className="flex justify-between items-center px-5 pt-2 pb-3">
+          <button onClick={()=>setShowManual(true)} className="text-gray-500 text-sm font-medium active:opacity-50">手動</button>
+          <div className="font-bold text-gray-900">新增食物</div>
+          <button onClick={onClose} className="text-green-500 font-medium active:opacity-50">完成</button>
+        </div>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-3">
+        <div className="px-4 pb-2">
+          <div className="bg-gray-200/60 rounded-2xl p-1 grid grid-cols-4 gap-1">
+            {['早餐','午餐','晚餐','點心'].map(m => (
+              <button key={m} onClick={()=>setMeal(m)}
+                className={'py-2 rounded-xl text-sm font-medium transition ' + (meal===m?'bg-white text-gray-900 shadow-sm':'text-gray-500')}>
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="px-4 pb-2">
+          <div className="bg-white rounded-2xl flex items-center gap-2 px-4 py-3 border border-gray-100">
+            <span className="text-gray-400">{Icons.search}</span>
+            <input value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="搜尋食物⋯（雞腿、珍奶）"
+              className="flex-1 outline-none bg-transparent text-sm"/>
+            {search && <button onClick={()=>setSearch('')} className="text-gray-400 text-sm active:opacity-50">清除</button>}
+          </div>
+        </div>
+
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
           {['全部', ...FOOD_CATEGORIES].map(c => (
             <button key={c} onClick={()=>setCategory(c)}
-              className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${category===c?'bg-emerald-500 text-white':'bg-white text-gray-600 border border-gray-200'}`}>
+              className={'px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition active:scale-95 ' + (category===c?'bg-green-500 text-white':'bg-white text-gray-600 border border-gray-100')}>
               {c}
             </button>
           ))}
         </div>
 
-        {recent.length > 0 && search === '' && category === '全部' && (
-          <div className="mb-4">
-            <div className="text-xs text-gray-500 mb-2">最近吃過</div>
-            <div className="grid grid-cols-2 gap-2">
-              {recent.map(r => (
-                <button key={r.id} onClick={()=>{
-                  setSelected({name:r.name, unit:r.unit, kcal:r.kcal, p:r.p, c:r.c, f:r.f, cat:'最近'});
-                  setAmount(r.amount);
-                }}
-                  className="bg-white p-3 rounded-lg border border-gray-200 text-left active:bg-gray-50">
-                  <div className="text-sm font-medium text-gray-800 truncate">{r.name}</div>
-                  <div className="text-[11px] text-gray-500">{Math.round(r.kcal)} kcal / {r.unit}</div>
+        <div className="flex-1 overflow-auto px-4 pb-4">
+          {recent.length > 0 && search === '' && category === '全部' && (
+            <div className="mb-3">
+              <div className="text-xs text-gray-400 mb-2 px-1">最近吃過</div>
+              <div className="space-y-2">
+                {recent.map(r => (
+                  <div key={r.id} className="bg-white rounded-2xl p-3.5 flex justify-between items-center">
+                    <button onClick={()=>setSelected({name:r.name, unit:r.unit, kcal:r.kcal, p:r.p, c:r.c, f:r.f, cat:'最近'})}
+                      className="flex-1 text-left active:opacity-50">
+                      <div className="text-sm font-medium text-gray-900 truncate">{r.name}</div>
+                      <div className="text-[11px] text-gray-400 mt-0.5">{r.unit} · 蛋白 {r.p} · 碳水 {r.c} · 脂肪 {r.f} g</div>
+                    </button>
+                    <div className="flex items-center gap-3 ml-3">
+                      <div className="text-base font-bold text-gray-900">{r.kcal}</div>
+                      <button onClick={()=>quickAdd({name:r.name, unit:r.unit, kcal:r.kcal, p:r.p, c:r.c, f:r.f}, r.amount||1)}
+                        className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center active:scale-90 transition shadow-md shadow-green-500/30">
+                        {Icons.plusSmall}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {filtered.map(f => (
+              <div key={f.id} className="bg-white rounded-2xl p-3.5 flex justify-between items-center">
+                <button onClick={()=>setSelected(f)} className="flex-1 text-left active:opacity-50">
+                  <div className="text-sm font-medium text-gray-900 truncate">{f.name}</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">{f.cat} · 每 {f.unit} · 蛋白 {f.p} · 碳水 {f.c} · 脂肪 {f.f} g</div>
                 </button>
-              ))}
-            </div>
+                <div className="flex items-center gap-3 ml-3">
+                  <div className="text-base font-bold text-gray-900">{f.kcal}</div>
+                  <button onClick={()=>quickAdd(f, 1)}
+                    className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center active:scale-90 transition shadow-md shadow-green-500/30">
+                    {Icons.plusSmall}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-sm">找不到「{search}」</div>
+                <button onClick={()=>{setManual(m=>({...m, name:search})); setShowManual(true);}}
+                  className="mt-3 px-5 py-2.5 bg-green-500 text-white rounded-full text-sm font-medium active:scale-95 transition">
+                  手動加進去
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        <div className="space-y-1.5">
-          {filtered.map(f => (
-            <button key={f.id} onClick={()=>setSelected(f)}
-              className="w-full bg-white p-3 rounded-lg border border-gray-200 text-left active:bg-gray-50 flex justify-between items-center">
-              <div>
-                <div className="text-sm font-medium text-gray-800">{f.name}</div>
-                <div className="text-[11px] text-gray-400">{f.cat} · 每 {f.unit}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold text-emerald-600">{f.kcal}</div>
-                <div className="text-[10px] text-gray-400">kcal</div>
-              </div>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-gray-400 text-sm">
-              <div>找不到「{search}」</div>
-              <button onClick={()=>{setManual(m=>({...m, name:search})); setShowManual(true);}}
-                className="mt-3 px-4 py-2 bg-emerald-500 text-white rounded-full text-sm">手動加進去</button>
-            </div>
-          )}
         </div>
       </div>
-    </ScreenShell>
+    </div>
   );
 }
 
 /* ============================================================
- *  Weight Log
+ *  Bottom Nav (5 鍵 + 中央懸浮)
  * ============================================================ */
-function WeightLog({ profile, onBack }){
-  const [weights, setWeights] = useState(()=> loadJSON(LS_KEYS.weight, []));
-  const [input, setInput] = useState(()=> weights.length ? weights[weights.length-1].kg : profile.current_weight_kg);
-
-  const add = () => {
-    const kg = parseFloat(input);
-    if(!kg || kg < 30 || kg > 250) return;
-    const date = todayStr();
-    const next = [...weights.filter(w => w.date !== date), {kg, date, t: Date.now()}]
-      .sort((a,b)=> a.date.localeCompare(b.date));
-    saveJSON(LS_KEYS.weight, next);
-    setWeights(next);
-  };
-
-  const remove = (date) => {
-    const next = weights.filter(w => w.date !== date);
-    saveJSON(LS_KEYS.weight, next);
-    setWeights(next);
-  };
-
-  // 折線圖座標計算
-  const chartData = useMemo(()=>{
-    if(weights.length === 0) return null;
-    const w = 320, h = 180, pad = 20;
-    const minKg = Math.min(...weights.map(x=>x.kg), profile.target_weight_kg) - 1;
-    const maxKg = Math.max(...weights.map(x=>x.kg), profile.target_weight_kg) + 1;
-    const xs = weights.map((p,i)=> pad + (i/(Math.max(weights.length-1,1)))*(w-pad*2));
-    const ys = weights.map(p => pad + (1 - (p.kg - minKg)/(maxKg - minKg))*(h-pad*2));
-    const points = xs.map((x,i)=> `${x},${ys[i]}`).join(' ');
-    const targetY = pad + (1 - (profile.target_weight_kg - minKg)/(maxKg - minKg))*(h-pad*2);
-
-    // 7-day moving average
-    const avgs = weights.map((_,i) => {
-      const slice = weights.slice(Math.max(0,i-6), i+1);
-      const s = slice.reduce((a,x)=>a+x.kg,0)/slice.length;
-      return s;
-    });
-    const avgYs = avgs.map(v => pad + (1 - (v - minKg)/(maxKg - minKg))*(h-pad*2));
-    const avgPoints = xs.map((x,i)=> `${x},${avgYs[i]}`).join(' ');
-
-    return { w, h, points, targetY, minKg, maxKg, avgPoints };
-  }, [weights, profile.target_weight_kg]);
-
-  const latest = weights[weights.length-1];
-  const prev = weights[weights.length-2];
-
+function BottomNav({ tab, onTab, onAdd }){
+  const items = [
+    {k:'home', label:'今日', icon: Icons.home},
+    {k:'record', label:'紀錄', icon: Icons.record},
+    {k:'_add'},
+    {k:'weight', label:'體重', icon: Icons.weight},
+    {k:'me', label:'我的', icon: Icons.me},
+  ];
   return (
-    <ScreenShell title="體重追蹤" onBack={onBack}>
-      <div className="p-5 space-y-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-200">
-          <div className="text-sm text-gray-500 mb-2">記錄今天的體重</div>
-          <div className="flex gap-2">
-            <input type="number" step="0.1" value={input}
-              onChange={e=>setInput(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 text-2xl font-bold text-center"/>
-            <button onClick={add}
-              className="px-6 rounded-lg bg-emerald-500 text-white font-semibold active:bg-emerald-600">
-              儲存
+    <div style={{position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:'448px', zIndex:40}}>
+      <div style={{background:'#ffffff', borderTop:'1px solid #f3f4f6', display:'grid', gridTemplateColumns:'repeat(5, 1fr)', position:'relative', paddingBottom:'env(safe-area-inset-bottom, 6px)'}}>
+        {items.map(it => {
+          if(it.k === '_add'){
+            return (
+              <div key="add" style={{display:'flex', justifyContent:'center', marginTop:'-24px'}}>
+                <button onClick={onAdd}
+                  style={{width:'56px', height:'56px', borderRadius:'9999px', background:'#22c55e', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', border:'none', cursor:'pointer', boxShadow:'0 10px 25px -5px rgba(34,197,94,0.4)'}}>
+                  {Icons.plus}
+                </button>
+              </div>
+            );
+          }
+          const active = tab === it.k;
+          return (
+            <button key={it.k} onClick={()=>onTab(it.k)}
+              style={{padding:'12px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px', background:'transparent', border:'none', cursor:'pointer', color: active ? '#22c55e' : '#9ca3af'}}>
+              {it.icon}
+              <span style={{fontSize:'10px'}}>{it.label}</span>
             </button>
-          </div>
-          <div className="text-[11px] text-gray-400 mt-2">同一天會覆蓋舊記錄</div>
-        </div>
-
-        {latest && (
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div className="text-xs text-gray-500">最新</div>
-                <div className="text-xl font-bold text-gray-800">{latest.kg}<span className="text-xs text-gray-400 ml-0.5">kg</span></div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">距目標</div>
-                <div className="text-xl font-bold text-emerald-600">{(latest.kg - profile.target_weight_kg).toFixed(1)}<span className="text-xs text-gray-400 ml-0.5">kg</span></div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">變化</div>
-                {prev ? (
-                  <div className={`text-xl font-bold ${latest.kg < prev.kg ? 'text-emerald-600':'text-rose-500'}`}>
-                    {latest.kg < prev.kg ? '↓':'↑'}{Math.abs(latest.kg - prev.kg).toFixed(1)}
-                  </div>
-                ) : <div className="text-xl text-gray-300">—</div>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {chartData && (
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-semibold text-gray-800">趨勢</div>
-              <div className="text-[11px] flex gap-3">
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500 inline-block"/>記錄</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-400 inline-block"/>7 日均</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-0 border-t border-dashed border-amber-400 inline-block"/>目標</span>
-              </div>
-            </div>
-            <svg viewBox={`0 0 ${chartData.w} ${chartData.h}`} className="w-full">
-              <line x1={20} x2={chartData.w-20} y1={chartData.targetY} y2={chartData.targetY}
-                stroke="#fbbf24" strokeDasharray="4 3" strokeWidth="1.5"/>
-              <polyline points={chartData.avgPoints} fill="none" stroke="#9ca3af" strokeWidth="2"/>
-              <polyline points={chartData.points} fill="none" stroke="#10b981" strokeWidth="2.5"/>
-              {weights.map((p,i)=>{
-                const x = 20 + (i/Math.max(weights.length-1,1))*(chartData.w-40);
-                const y = 20 + (1 - (p.kg - chartData.minKg)/(chartData.maxKg - chartData.minKg))*(chartData.h-40);
-                return <circle key={i} cx={x} cy={y} r="3" fill="#10b981"/>;
-              })}
-            </svg>
-          </div>
-        )}
-
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-800 text-sm">歷史記錄</div>
-          {weights.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">還沒有任何記錄</div>
-          ) : (
-            <div>
-              {[...weights].reverse().map(w => (
-                <div key={w.date} className="flex justify-between items-center px-4 py-3 border-b border-gray-50 last:border-0">
-                  <div>
-                    <div className="text-sm text-gray-700">{w.date}</div>
-                    <div className="text-lg font-bold text-gray-800">{w.kg} <span className="text-xs text-gray-400">kg</span></div>
-                  </div>
-                  <button onClick={()=>remove(w.date)} className="text-xs text-red-400 active:opacity-50">刪除</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          );
+        })}
       </div>
-    </ScreenShell>
-  );
-}
-
-/* ============================================================
- *  Settings
- * ============================================================ */
-function Settings({ profile, onBack, onUpdate, onReset }){
-  const [edit, setEdit] = useState(()=>({
-    ...profile,
-    useCustomTargets: profile.useCustomTargets || false,
-    customKcal: profile.customKcal ?? profile.dailyKcal,
-    customProtein: profile.customProtein ?? profile.proteinG,
-    customCarbs: profile.customCarbs ?? profile.carbsG,
-    customFat: profile.customFat ?? profile.fatG,
-    customWater: profile.customWater ?? profile.waterMl,
-  }));
-  const newTargets = useMemo(()=> calcDailyTargets(edit), [edit]);
-
-  const save = () => {
-    // 套用自訂或自動計算
-    const finalTargets = edit.useCustomTargets ? {
-      ...newTargets,
-      dailyKcal: +edit.customKcal || newTargets.dailyKcal,
-      proteinG: +edit.customProtein || newTargets.proteinG,
-      carbsG: +edit.customCarbs || newTargets.carbsG,
-      fatG: +edit.customFat || newTargets.fatG,
-      waterMl: +edit.customWater || newTargets.waterMl,
-    } : newTargets;
-    onUpdate({...edit, ...finalTargets});
-    onBack();
-  };
-
-  const resetCustomToCalculated = () => {
-    setEdit(e => ({
-      ...e,
-      customKcal: newTargets.dailyKcal,
-      customProtein: newTargets.proteinG,
-      customCarbs: newTargets.carbsG,
-      customFat: newTargets.fatG,
-      customWater: newTargets.waterMl,
-    }));
-  };
-
-  const exportData = () => {
-    const data = {
-      profile: loadJSON(LS_KEYS.profile, {}),
-      entries: loadJSON(LS_KEYS.entries, []),
-      water: loadJSON(LS_KEYS.water, []),
-      weights: loadJSON(LS_KEYS.weight, []),
-      exported_at: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `輕食日記-${todayStr()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <ScreenShell title="設定" onBack={onBack}>
-      <div className="p-4 space-y-3">
-        <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-3">
-          <div className="font-semibold text-gray-800 text-sm">個人資料</div>
-          <div>
-            <label className="text-xs text-gray-500">暱稱</label>
-            <input value={edit.display_name||''} onChange={e=>setEdit({...edit, display_name:e.target.value})}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-gray-500">身高 cm</label>
-              <input type="number" value={edit.height_cm} onChange={e=>setEdit({...edit, height_cm:+e.target.value})}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">目前 kg</label>
-              <input type="number" step="0.1" value={edit.current_weight_kg} onChange={e=>setEdit({...edit, current_weight_kg:+e.target.value})}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">目標 kg</label>
-              <input type="number" step="0.1" value={edit.target_weight_kg} onChange={e=>setEdit({...edit, target_weight_kg:+e.target.value})}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">生日</label>
-              <input type="date" value={edit.birthday} onChange={e=>setEdit({...edit, birthday:e.target.value})}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">活動量</label>
-            <select value={edit.activity_level} onChange={e=>setEdit({...edit, activity_level:e.target.value})}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200">
-              <option value="sedentary">久坐</option>
-              <option value="light">輕度</option>
-              <option value="moderate">中度</option>
-              <option value="active">高度</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">減重步調</label>
-            <select value={edit.weight_loss_pace} onChange={e=>setEdit({...edit, weight_loss_pace:e.target.value})}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200">
-              <option value="mild">溫和 -0.25kg/週</option>
-              <option value="standard">標準 -0.5kg/週</option>
-              <option value="aggressive">積極 -0.75kg/週</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 text-sm">
-          <div className="text-emerald-800 font-medium mb-2">自動計算（依基本資料）</div>
-          <div className="space-y-1 text-emerald-700">
-            <div>每日熱量：<span className="font-bold">{newTargets.dailyKcal}</span> 大卡</div>
-            <div>蛋白 {newTargets.proteinG}g · 碳水 {newTargets.carbsG}g · 脂肪 {newTargets.fatG}g</div>
-            <div>每日水分：{newTargets.waterMl} ml</div>
-            <div>BMI {newTargets.bmi}</div>
-            {newTargets.floorApplied && <div className="text-amber-700 text-xs mt-1">⚠️ 已套用熱量下限保護</div>}
-          </div>
-        </div>
-
-        {/* 自訂目標 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="font-semibold text-gray-800 text-sm">使用自訂目標</div>
-              <div className="text-[11px] text-gray-500">開啟後優先使用下方數字，忽略自動計算</div>
-            </div>
-            <button onClick={()=>setEdit({...edit, useCustomTargets: !edit.useCustomTargets})}
-              className={`relative w-12 h-7 rounded-full transition ${edit.useCustomTargets?'bg-emerald-500':'bg-gray-300'}`}>
-              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${edit.useCustomTargets?'left-[22px]':'left-0.5'}`}/>
-            </button>
-          </div>
-
-          {edit.useCustomTargets && (
-            <div className="slide-up space-y-3 pt-2 border-t border-gray-100">
-              <div>
-                <label className="text-xs text-gray-500">每日熱量 (kcal)</label>
-                <input type="number" value={edit.customKcal}
-                  onChange={e=>setEdit({...edit, customKcal: e.target.value})}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-lg font-semibold"/>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs text-rose-500">蛋白 g</label>
-                  <input type="number" value={edit.customProtein}
-                    onChange={e=>setEdit({...edit, customProtein: e.target.value})}
-                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
-                </div>
-                <div>
-                  <label className="text-xs text-amber-500">碳水 g</label>
-                  <input type="number" value={edit.customCarbs}
-                    onChange={e=>setEdit({...edit, customCarbs: e.target.value})}
-                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
-                </div>
-                <div>
-                  <label className="text-xs text-blue-500">脂肪 g</label>
-                  <input type="number" value={edit.customFat}
-                    onChange={e=>setEdit({...edit, customFat: e.target.value})}
-                    className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm"/>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-cyan-600">每日水分 (ml)</label>
-                <input type="number" value={edit.customWater}
-                  onChange={e=>setEdit({...edit, customWater: e.target.value})}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"/>
-              </div>
-              <button onClick={resetCustomToCalculated}
-                className="w-full py-2 rounded-lg border border-gray-300 text-xs text-gray-600 active:bg-gray-50">
-                ↻ 拉回到自動計算的數字
-              </button>
-              <div className="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 border border-amber-100">
-                ⚠️ 自訂目標時，健康下限保護不會自動套用。請依專業建議設定。
-              </div>
-            </div>
-          )}
-        </div>
-
-        <button onClick={save}
-          className="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold active:bg-emerald-600">
-          儲存變更
-        </button>
-
-        <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-2">
-          <div className="font-semibold text-gray-800 text-sm">資料管理</div>
-          <button onClick={exportData}
-            className="w-full py-2.5 rounded-lg border border-gray-300 text-gray-700 active:bg-gray-50">
-            匯出資料（JSON）
-          </button>
-          <button onClick={()=>{
-            if(confirm('確定要重置所有資料嗎？這不能還原。')) onReset();
-          }}
-            className="w-full py-2.5 rounded-lg border border-red-200 text-red-600 active:bg-red-50">
-            重置所有資料
-          </button>
-        </div>
-
-        <div className="text-center text-[11px] text-gray-400 py-4">
-          輕食日記 MVP v0.3<br/>
-          資料儲存在你的瀏覽器
-        </div>
-      </div>
-    </ScreenShell>
+    </div>
   );
 }
 
@@ -1475,39 +1669,45 @@ function Settings({ profile, onBack, onUpdate, onReset }){
  * ============================================================ */
 function App(){
   const [profile, setProfile] = useState(()=> loadJSON(LS_KEYS.profile, null));
-  const [screen, setScreen] = useState('home');
+  const [tab, setTab] = useState('home');
+  const [showAdd, setShowAdd] = useState(false);
+  const [addDefaultMeal, setAddDefaultMeal] = useState(null);
   const [tick, setTick] = useState(0);
 
-  useEffect(()=> {
-    if(profile) saveJSON(LS_KEYS.profile, profile);
-  }, [profile]);
-
-  const refresh = () => setTick(t=>t+1);
+  useEffect(()=> { if(profile) saveJSON(LS_KEYS.profile, profile); }, [profile]);
 
   if(!profile){
     return <Onboarding onDone={p => setProfile(p)}/>;
   }
 
-  const nav = (s) => {
-    setScreen(s);
-    window.scrollTo(0,0);
+  const openAdd = (defaultMeal) => {
+    setAddDefaultMeal(defaultMeal || null);
+    setShowAdd(true);
   };
 
   return (
-    <div key={tick}>
-      {screen === 'home' && <Dashboard profile={profile} onNav={nav}/>}
-      {screen === 'addfood' && <AddFood onBack={()=>nav('home')} onAdded={()=>{ refresh(); nav('home'); }}/>}
-      {screen === 'weight' && <WeightLog profile={profile} onBack={()=>nav('home')}/>}
-      {screen === 'settings' && (
-        <Settings
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative" key={tick}
+         style={{maxWidth:'448px', margin:'0 auto', position:'relative', minHeight:'100vh', background:'#f5f5f7'}}>
+      {tab === 'home' && <Dashboard profile={profile}/>}
+      {tab === 'record' && <Record onAdd={openAdd}/>}
+      {tab === 'weight' && <Weight profile={profile}/>}
+      {tab === 'me' && (
+        <Me
           profile={profile}
-          onBack={()=>nav('home')}
-          onUpdate={(p)=>setProfile(p)}
+          onUpdate={p => { setProfile(p); setTick(t=>t+1); }}
           onReset={()=>{
             Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
             setProfile(null);
-            setScreen('home');
+            setTab('home');
           }}
+        />
+      )}
+      <BottomNav tab={tab} onTab={setTab} onAdd={()=>openAdd()}/>
+      {showAdd && (
+        <AddFoodModal
+          defaultMeal={addDefaultMeal}
+          onClose={()=>setShowAdd(false)}
+          onAdded={()=>setTick(t=>t+1)}
         />
       )}
     </div>
@@ -1516,7 +1716,6 @@ function App(){
 
 try {
   ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-  // 啟動成功,收起 loading
   if(window.__appReady) setTimeout(window.__appReady, 100);
 } catch(err) {
   if(window.showBootError) window.showBootError('React 初始化失敗', err.stack || err.message || err);
