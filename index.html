@@ -423,6 +423,63 @@ function saveJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(val
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function firstChar(name){ return (name || '').trim().charAt(0).toUpperCase() || '?'; }
 
+// 日期工具
+function ymd(d){ return d.toISOString().slice(0,10); }
+function parseYMD(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function isFuture(dateStr){ return dateStr > todayStr(); }
+
+// 取得指定日期所在週的 7 天（週一到週日）
+function getWeekDates(centerDateStr){
+  const center = parseYMD(centerDateStr);
+  const dayOfWeek = (center.getDay() + 6) % 7; // 週一 = 0
+  const monday = new Date(center); monday.setDate(center.getDate() - dayOfWeek);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    return ymd(d);
+  });
+}
+
+// 取得指定年月的日曆網格（從週一開始，前後補齊）
+function getMonthGrid(year, month){
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const firstWeekday = (firstDay.getDay() + 6) % 7;
+  const start = new Date(firstDay); start.setDate(1 - firstWeekday);
+  const cells = [];
+  for(let i=0; i<42; i++){
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    cells.push({ date: ymd(d), inMonth: d.getMonth() === month, day: d.getDate() });
+    if(i >= 27 && d >= lastDay && (i+1) % 7 === 0) break; // 結束於完整週
+  }
+  return cells;
+}
+
+// 計算某天的攝取狀態
+function getDayStatus(dateStr, allEntries, target){
+  const today = todayStr();
+  if(dateStr > today) return { status: 'future', kcal: 0 };
+  const sum = allEntries.filter(e => e.date === dateStr).reduce((a,e) => a + e.kcal * e.amount, 0);
+  if(dateStr === today) return { status: 'today', kcal: sum };
+  if(sum === 0) return { status: 'none', kcal: 0 };
+  if(sum > target) return { status: 'over', kcal: sum };
+  return { status: 'under', kcal: sum };
+}
+
+// 狀態 → 顏色配置
+const STATUS_COLORS = {
+  under:  { bg:'#e8f0e8', text:'#3b6e3e', accent:'#65a868' },
+  over:   { bg:'#f5e1e1', text:'#883232', accent:'#c45a5a' },
+  today:  { bg:'#22c55e', text:'#ffffff', accent:'#22c55e' },
+  none:   { bg:'transparent', text:'#9ca3af', accent:'#d1d5db' },
+  future: { bg:'transparent', text:'#d1d5db', accent:'#e5e7eb' },
+};
+
+function formatKcal(n){
+  if(n === 0) return '—';
+  if(n < 1000) return Math.round(n).toString();
+  return (n/1000).toFixed(1) + 'k';
+}
+
 /* ============================================================
  *  共用元件
  * ============================================================ */
@@ -488,7 +545,171 @@ const Icons = {
   drop: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.5c-3 4-7 8.5-7 12.5a7 7 0 0 0 14 0c0-4-4-8.5-7-12.5z"/></svg>,
   trash: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
   undo: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>,
+  calendar: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  chevL: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  check: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
 };
+
+/* Toast 提示元件 */
+function Toast({ message, onDone }){
+  useEffect(() => {
+    if(!message) return;
+    const t = setTimeout(onDone, 1600);
+    return () => clearTimeout(t);
+  }, [message]);
+  if(!message) return null;
+  return (
+    <div style={{position:'absolute', top:'58px', left:'50%', transform:'translateX(-50%)', zIndex:200, pointerEvents:'none'}}>
+      <div className="fade-in" style={{background:'rgba(34,197,94,0.94)', color:'white', padding:'9px 18px', borderRadius:'9999px', fontSize:'13px', fontWeight:500, boxShadow:'0 6px 16px rgba(0,0,0,0.18)', display:'flex', alignItems:'center', gap:'6px', whiteSpace:'nowrap'}}>
+        {Icons.check}
+        <span>{message}</span>
+      </div>
+    </div>
+  );
+}
+
+/* 週曆條 */
+function WeekStrip({ centerDate, selectedDate, allEntries, target, onPick, onOpenCalendar }){
+  const days = getWeekDates(centerDate);
+  const dayNames = ['一','二','三','四','五','六','日'];
+  const today = todayStr();
+
+  // 切換到上週/下週
+  const shiftWeek = (delta) => {
+    const d = parseYMD(centerDate); d.setDate(d.getDate() + delta*7);
+    onPick(ymd(d));
+  };
+
+  return (
+    <div className="bg-white rounded-3xl p-3 pb-2">
+      <div className="flex items-center justify-between px-2 pb-2">
+        <button onClick={()=>shiftWeek(-1)} className="text-gray-400 active:opacity-50 p-1">{Icons.chevL}</button>
+        <div className="text-xs text-gray-500">{parseYMD(days[0]).getMonth()+1} 月 · 第 {Math.ceil(parseYMD(days[3]).getDate()/7)} 週</div>
+        <div className="flex items-center gap-2">
+          <button onClick={()=>shiftWeek(1)} className="text-gray-400 active:opacity-50 p-1" style={{transform:'rotate(180deg)'}}>{Icons.chevL}</button>
+          <button onClick={onOpenCalendar} className="text-gray-500 bg-gray-50 active:opacity-50 p-1.5 rounded-lg">{Icons.calendar}</button>
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        {days.map((dateStr, i) => {
+          const { status, kcal } = getDayStatus(dateStr, allEntries, target);
+          const c = STATUS_COLORS[status];
+          const isSelected = dateStr === selectedDate;
+          const isFutureDay = status === 'future';
+          const isToday = dateStr === today;
+          const day = parseYMD(dateStr).getDate();
+          return (
+            <button key={dateStr}
+              disabled={isFutureDay}
+              onClick={()=> !isFutureDay && onPick(dateStr)}
+              className="flex-1 flex flex-col items-center"
+              style={{background:'transparent', border:'none', cursor: isFutureDay?'default':'pointer', padding:'2px 0'}}>
+              <div style={{fontSize:'10px', color: isToday?'#22c55e': (isSelected?'#1f2937':'#9ca3af'), fontWeight: isToday?500:400, marginBottom:'4px'}}>
+                {dayNames[i]}
+              </div>
+              <div style={{
+                width:'32px', height:'32px',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                borderRadius: isToday ? '50%' : '10px',
+                background: c.bg,
+                color: c.text,
+                fontSize:'13px',
+                fontWeight: 500,
+                border: isSelected && !isToday ? '2px solid #22c55e' : (status==='none'?'1px solid transparent':'1px solid transparent'),
+                transition:'all .15s'
+              }}>
+                {day}
+              </div>
+              <div style={{fontSize:'9px', marginTop:'4px', color: c.accent, fontWeight: status==='none'||status==='future'?400:500, minHeight:'12px'}}>
+                {status==='future' ? '' : formatKcal(kcal)}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* 月曆 overlay */
+function MonthCalendar({ selectedDate, allEntries, target, onPick, onClose }){
+  const [viewYM, setViewYM] = useState(() => {
+    const d = parseYMD(selectedDate);
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  const cells = useMemo(()=> getMonthGrid(viewYM.y, viewYM.m), [viewYM]);
+  const today = todayStr();
+  const goPrev = () => setViewYM(v => v.m === 0 ? {y:v.y-1, m:11} : {y:v.y, m:v.m-1});
+  const goNext = () => setViewYM(v => v.m === 11 ? {y:v.y+1, m:0} : {y:v.y, m:v.m+1});
+
+  return (
+    <div className="fade-in" style={{position:'fixed', inset:0, zIndex:150}}>
+      <div onClick={onClose} style={{position:'absolute', inset:0, background:'rgba(0,0,0,0.4)'}}/>
+      <div className="sheet-in" style={{position:'absolute', left:0, right:0, bottom:0, background:'#f5f5f7', borderTopLeftRadius:'24px', borderTopRightRadius:'24px', maxWidth:'448px', margin:'0 auto', padding:'12px 14px 20px'}}>
+        <div style={{display:'flex', justifyContent:'center', paddingTop:'4px', paddingBottom:'10px'}}>
+          <div style={{width:40, height:4, background:'#d1d5db', borderRadius:2}}/>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={goPrev} className="text-gray-500 p-2 active:opacity-50">{Icons.chevL}</button>
+          <div className="text-base font-bold text-gray-900">{viewYM.y} 年 {viewYM.m+1} 月</div>
+          <button onClick={goNext} className="text-gray-500 p-2 active:opacity-50" style={{transform:'rotate(180deg)'}}>{Icons.chevL}</button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2">
+          {['一','二','三','四','五','六','日'].map(d => <div key={d}>{d}</div>)}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1.5">
+          {cells.map((cell, i) => {
+            if(!cell.inMonth) return <div key={i} style={{minHeight:'42px'}}/>;
+            const { status, kcal } = getDayStatus(cell.date, allEntries, target);
+            const c = STATUS_COLORS[status];
+            const isToday = cell.date === today;
+            const isSelected = cell.date === selectedDate;
+            const isFutureDay = status === 'future';
+            return (
+              <button key={i}
+                disabled={isFutureDay}
+                onClick={()=>{ if(!isFutureDay){ onPick(cell.date); onClose(); } }}
+                style={{
+                  background: isToday ? '#22c55e' : c.bg,
+                  color: isToday ? '#fff' : c.text,
+                  border: isSelected && !isToday ? '2px solid #22c55e' : '1px solid transparent',
+                  borderRadius: isToday ? '50%' : '10px',
+                  padding:'4px 0',
+                  minHeight:'42px',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                  cursor: isFutureDay ? 'default' : 'pointer',
+                  fontSize:'12px',
+                  fontWeight: 500,
+                  opacity: isFutureDay ? 0.4 : 1,
+                  transition:'all .15s'
+                }}>
+                <div>{cell.day}</div>
+                {(status==='under' || status==='over' || status==='today') && (
+                  <div style={{fontSize:'8px', marginTop:'1px', opacity: isToday ? 0.9 : 1}}>{formatKcal(kcal)}</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span className="flex items-center gap-1"><span style={{width:'10px', height:'10px', background:'#e8f0e8', borderRadius:'3px'}}/>達標</span>
+            <span className="flex items-center gap-1"><span style={{width:'10px', height:'10px', background:'#f5e1e1', borderRadius:'3px'}}/>超</span>
+          </div>
+          <button onClick={()=>{ onPick(today); onClose(); }}
+            className="px-4 py-2 rounded-xl bg-green-500 text-white text-sm font-medium active:scale-95 transition">
+            今日
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ============================================================
  *  Onboarding
@@ -678,11 +899,11 @@ function Onboarding({ onDone }){
 /* ============================================================
  *  Dashboard (今日)
  * ============================================================ */
-function Dashboard({ profile }){
+function Dashboard({ profile, dataVersion, onChanged }){
   const today = todayStr();
-  const entries = loadJSON(LS_KEYS.entries, []);
-  const waterLog = loadJSON(LS_KEYS.water, []);
-  const weights = loadJSON(LS_KEYS.weight, []);
+  const entries = useMemo(()=> loadJSON(LS_KEYS.entries, []), [dataVersion]);
+  const waterLog = useMemo(()=> loadJSON(LS_KEYS.water, []), [dataVersion]);
+  const weights = useMemo(()=> loadJSON(LS_KEYS.weight, []), [dataVersion]);
 
   const todayEntries = entries.filter(e => e.date === today);
   const totals = todayEntries.reduce((a,e)=> ({
@@ -696,19 +917,17 @@ function Dashboard({ profile }){
   const latestWeight = weights.length > 0 ? weights[weights.length-1] : null;
   const firstWeight = weights[0];
 
-  const [tick, setTick] = useState(0);
-  const refresh = () => setTick(t => t+1);
   const addWater = (ml) => {
     const next = [...waterLog, {ml, date: today, t: Date.now()}];
     saveJSON(LS_KEYS.water, next);
-    refresh();
+    onChanged && onChanged();
   };
   const undoWater = () => {
     const todayList = waterLog.filter(x => x.date === today);
     if(todayList.length === 0) return;
     const lastT = Math.max(...todayList.map(x=>x.t));
     saveJSON(LS_KEYS.water, waterLog.filter(x => x.t !== lastT));
-    refresh();
+    onChanged && onChanged();
   };
 
   const greeting = (() => {
@@ -739,7 +958,7 @@ function Dashboard({ profile }){
   }, [weights]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32" key={tick}>
+    <div className="min-h-screen bg-gray-50 pb-32">
       <div className="px-5 pt-6 pb-3 flex justify-between items-start">
         <div>
           <div className="text-xs text-gray-400">{dateStr}</div>
@@ -846,30 +1065,55 @@ function Dashboard({ profile }){
 }
 
 /* ============================================================
- *  Record (紀錄) — 飲食紀錄獨立分頁
+ *  Record (紀錄) — 含週曆條 + 月曆 overlay
  * ============================================================ */
-function Record({ onAdd }){
+function Record({ profile, dataVersion, onAdd, onChanged }){
   const today = todayStr();
-  const [entries, setEntries] = useState(()=> loadJSON(LS_KEYS.entries, []));
-  const todayEntries = entries.filter(e => e.date === today);
-  const totalKcal = todayEntries.reduce((a,e)=> a + e.kcal * e.amount, 0);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  // 每次 dataVersion 變動都重新讀 localStorage（避免閃退、不需 unmount）
+  const allEntries = useMemo(()=> loadJSON(LS_KEYS.entries, []), [dataVersion]);
+  const dayEntries = allEntries.filter(e => e.date === selectedDate);
+  const totalKcal = dayEntries.reduce((a,e)=> a + e.kcal * e.amount, 0);
 
   const deleteEntry = (id) => {
-    const next = entries.filter(e => e.id !== id);
+    const next = allEntries.filter(e => e.id !== id);
     saveJSON(LS_KEYS.entries, next);
-    setEntries(next);
+    onChanged && onChanged();
   };
 
+  // 顯示用日期字串
+  const dateLabel = (() => {
+    if(selectedDate === today) return '今日';
+    const d = parseYMD(selectedDate);
+    const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
+    return `${d.getMonth()+1}/${d.getDate()} 週${weekday}`;
+  })();
+
   const meals = ['早餐','午餐','晚餐','點心'];
+
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
       <div className="px-5 pt-6 pb-3">
-        <div className="text-xs text-gray-400">今日 · 共 {Math.round(totalKcal).toLocaleString()} kcal</div>
+        <div className="text-xs text-gray-400">{dateLabel} · 共 {Math.round(totalKcal).toLocaleString()} kcal</div>
         <div className="text-2xl font-bold text-gray-900 mt-0.5">飲食紀錄</div>
       </div>
+
+      <div className="px-4 mb-3">
+        <WeekStrip
+          centerDate={selectedDate}
+          selectedDate={selectedDate}
+          allEntries={allEntries}
+          target={profile.dailyKcal}
+          onPick={setSelectedDate}
+          onOpenCalendar={()=>setShowCalendar(true)}
+        />
+      </div>
+
       <div className="px-4 space-y-3">
         {meals.map(meal => {
-          const items = todayEntries.filter(e => e.meal === meal);
+          const items = dayEntries.filter(e => e.meal === meal);
           const mealKcal = items.reduce((a,i)=>a + i.kcal * i.amount, 0);
           return (
             <div key={meal} className="bg-white rounded-3xl p-5">
@@ -903,13 +1147,23 @@ function Record({ onAdd }){
                   ))}
                 </div>
               )}
-              <button onClick={()=>onAdd(meal)} className="mt-3 pt-3 border-t border-gray-100 w-full flex items-center gap-2 text-green-500 text-sm font-medium active:opacity-50">
-                {Icons.plusSmall} 新增食物
+              <button onClick={()=>onAdd({meal, date: selectedDate})} className="mt-3 pt-3 border-t border-gray-100 w-full flex items-center gap-2 text-green-500 text-sm font-medium active:opacity-50">
+                {Icons.plusSmall} 新增食物{selectedDate !== today ? `（補記到 ${dateLabel}）` : ''}
               </button>
             </div>
           );
         })}
       </div>
+
+      {showCalendar && (
+        <MonthCalendar
+          selectedDate={selectedDate}
+          allEntries={allEntries}
+          target={profile.dailyKcal}
+          onPick={setSelectedDate}
+          onClose={()=>setShowCalendar(false)}
+        />
+      )}
     </div>
   );
 }
@@ -917,8 +1171,8 @@ function Record({ onAdd }){
 /* ============================================================
  *  Weight (體重)
  * ============================================================ */
-function Weight({ profile }){
-  const [weights, setWeights] = useState(()=> loadJSON(LS_KEYS.weight, []));
+function Weight({ profile, dataVersion, onChanged }){
+  const weights = useMemo(()=> loadJSON(LS_KEYS.weight, []), [dataVersion]);
   const [input, setInput] = useState(()=> weights.length ? weights[weights.length-1].kg : profile.current_weight_kg);
   const [showInput, setShowInput] = useState(false);
 
@@ -929,13 +1183,13 @@ function Weight({ profile }){
     const next = [...weights.filter(w => w.date !== date), {kg, date, t: Date.now()}]
       .sort((a,b)=> a.date.localeCompare(b.date));
     saveJSON(LS_KEYS.weight, next);
-    setWeights(next);
     setShowInput(false);
+    onChanged && onChanged();
   };
   const remove = (date) => {
     const next = weights.filter(w => w.date !== date);
     saveJSON(LS_KEYS.weight, next);
-    setWeights(next);
+    onChanged && onChanged();
   };
 
   const chartData = useMemo(()=>{
@@ -1162,7 +1416,7 @@ function Me({ profile, onUpdate, onReset }){
             <span className="text-gray-300">{Icons.chevR}</span>
           </button>
 
-          <div className="text-center text-[11px] text-gray-400 pt-6">輕食日記 MVP v0.4</div>
+          <div className="text-center text-[11px] text-gray-400 pt-6">輕食日記 MVP v0.5</div>
         </div>
       </div>
     );
@@ -1355,7 +1609,7 @@ function Me({ profile, onUpdate, onReset }){
 /* ============================================================
  *  AddFood Modal (新增食物 — 底部 sheet)
  * ============================================================ */
-function AddFoodModal({ defaultMeal, onClose, onAdded }){
+function AddFoodModal({ defaultMeal, targetDate, onClose, onAdded }){
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('全部');
   const [meal, setMeal] = useState(defaultMeal || (() => {
@@ -1370,6 +1624,11 @@ function AddFoodModal({ defaultMeal, onClose, onAdded }){
   const [amount, setAmount] = useState(1);
   const [showManual, setShowManual] = useState(false);
   const [manual, setManual] = useState({ name:'', kcal:'', p:'', c:'', f:'', unit:'份' });
+  const [toast, setToast] = useState(null);
+  const [recentRefresh, setRecentRefresh] = useState(0); // 觸發「最近吃過」重算
+
+  const effectiveDate = targetDate || todayStr();
+  const isPastDate = effectiveDate !== todayStr();
 
   const recent = useMemo(()=>{
     const all = loadJSON(LS_KEYS.entries, []);
@@ -1379,7 +1638,7 @@ function AddFoodModal({ defaultMeal, onClose, onAdded }){
       seen.add(e.name);
       return true;
     }).slice(0, 6);
-  }, []);
+  }, [recentRefresh]);
 
   const filtered = useMemo(()=> {
     let list = FOOD_DB;
@@ -1400,11 +1659,14 @@ function AddFoodModal({ defaultMeal, onClose, onAdded }){
       unit: food.unit,
       amount: amt,
       meal,
-      date: todayStr(),
+      date: effectiveDate,
       t: Date.now(),
     };
     saveJSON(LS_KEYS.entries, [...entries, newEntry]);
     onAdded && onAdded();
+    // 顯示 toast,不關閉 modal
+    setToast(`已新增 ${food.name}${amt !== 1 ? ` ×${amt}` : ''}`);
+    setRecentRefresh(r => r + 1);
   };
 
   const commitWithAmount = () => {
@@ -1528,15 +1790,21 @@ function AddFoodModal({ defaultMeal, onClose, onAdded }){
   return (
     <div className="fade-in" style={{position:'fixed',inset:0,zIndex:100}}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose}/>
-      <div className="absolute left-0 right-0 bottom-0 bg-gray-50 rounded-t-3xl max-w-md mx-auto sheet-in" style={{height:'90vh', display:'flex', flexDirection:'column'}}>
+      <div className="absolute left-0 right-0 bottom-0 bg-gray-50 rounded-t-3xl max-w-md mx-auto sheet-in" style={{height:'90vh', display:'flex', flexDirection:'column', position:'absolute'}}>
+        <Toast message={toast} onDone={()=>setToast(null)}/>
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-300 rounded-full"/>
         </div>
-        <div className="flex justify-between items-center px-5 pt-2 pb-3">
+        <div className="flex justify-between items-center px-5 pt-2 pb-1">
           <button onClick={()=>setShowManual(true)} className="text-gray-500 text-sm font-medium active:opacity-50">手動</button>
           <div className="font-bold text-gray-900">新增食物</div>
           <button onClick={onClose} className="text-green-500 font-medium active:opacity-50">完成</button>
         </div>
+        {isPastDate && (
+          <div className="mx-5 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+            ℹ️ 補記到 {(()=>{ const d = parseYMD(effectiveDate); return `${d.getMonth()+1}/${d.getDate()}`; })()}（不是今天）
+          </div>
+        )}
 
         <div className="px-4 pb-2">
           <div className="bg-gray-200/60 rounded-2xl p-1 grid grid-cols-4 gap-1">
@@ -1672,7 +1940,8 @@ function App(){
   const [tab, setTab] = useState('home');
   const [showAdd, setShowAdd] = useState(false);
   const [addDefaultMeal, setAddDefaultMeal] = useState(null);
-  const [tick, setTick] = useState(0);
+  const [addTargetDate, setAddTargetDate] = useState(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   useEffect(()=> { if(profile) saveJSON(LS_KEYS.profile, profile); }, [profile]);
 
@@ -1680,21 +1949,30 @@ function App(){
     return <Onboarding onDone={p => setProfile(p)}/>;
   }
 
-  const openAdd = (defaultMeal) => {
-    setAddDefaultMeal(defaultMeal || null);
+  const bumpData = () => setDataVersion(v => v + 1);
+
+  // 接受 openAdd() 或 openAdd({meal, date})
+  const openAdd = (opts) => {
+    if(typeof opts === 'string'){
+      setAddDefaultMeal(opts);
+      setAddTargetDate(null);
+    } else {
+      setAddDefaultMeal(opts?.meal || null);
+      setAddTargetDate(opts?.date || null);
+    }
     setShowAdd(true);
   };
 
   return (
-    <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative" key={tick}
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative"
          style={{maxWidth:'448px', margin:'0 auto', position:'relative', minHeight:'100vh', background:'#f5f5f7'}}>
-      {tab === 'home' && <Dashboard profile={profile}/>}
-      {tab === 'record' && <Record onAdd={openAdd}/>}
-      {tab === 'weight' && <Weight profile={profile}/>}
+      {tab === 'home' && <Dashboard profile={profile} dataVersion={dataVersion} onChanged={bumpData}/>}
+      {tab === 'record' && <Record profile={profile} dataVersion={dataVersion} onAdd={openAdd} onChanged={bumpData}/>}
+      {tab === 'weight' && <Weight profile={profile} dataVersion={dataVersion} onChanged={bumpData}/>}
       {tab === 'me' && (
         <Me
           profile={profile}
-          onUpdate={p => { setProfile(p); setTick(t=>t+1); }}
+          onUpdate={p => { setProfile(p); bumpData(); }}
           onReset={()=>{
             Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
             setProfile(null);
@@ -1706,8 +1984,9 @@ function App(){
       {showAdd && (
         <AddFoodModal
           defaultMeal={addDefaultMeal}
+          targetDate={addTargetDate}
           onClose={()=>setShowAdd(false)}
-          onAdded={()=>setTick(t=>t+1)}
+          onAdded={bumpData}
         />
       )}
     </div>
